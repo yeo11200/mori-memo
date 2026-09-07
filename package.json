@@ -1,0 +1,60 @@
+{
+  "name": "personal-wiki",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local personal wiki for macOS",
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/build-electron.mjs",
+    "test": "vitest run",
+    "start": "electron .",
+    "package:mac": "npm run build && electron-builder --mac dir --arm64",
+    "package:dmg": "npm run build && electron-builder --mac dmg --arm64"
+  },
+  "build": {
+    "appId": "local.personalwiki.desktop",
+    "productName": "MORI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icons/mori.icns",
+      "identity": null,
+      "target": [
+        "dir"
+      ],
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "선택한 화면 영역을 메모에 첨부합니다."
+      }
+    }
+  },
+  "dependencies": {
+    "lucide-react": "^1.41.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  }
+}

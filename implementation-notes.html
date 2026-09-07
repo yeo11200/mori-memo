@@ -1,0 +1,53 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Personal Wiki 구현 노트</title>
+<h1>Personal Wiki 구현 노트</h1>
+<p>2026-09-07 · 첫 맥 앱 구현</p>
+<h2>Design decisions</h2>
+<p>2026-09-08 · MORI 0.2.0: 이전 앱 프로세스가 새 번들 빌드 후에도 남아 설정 화면이 갱신되지 않았음을 시작 시간으로 확인했다. 정상 종료 확인 후 재패키징하고 실제 앱 번들 UI 테스트를 추가했다. 전역 ⌘⇧Space 빠른 메모, ⌘Enter 저장, 메뉴 막대 백그라운드 대기, 선택적 로그인 자동 실행을 구현했다. 설치만으로 종료된 앱이 단축키를 받는 것은 지원하지 않으며 로그인 자동 실행/백그라운드 상태를 사용한다. 자세한 검증은 Docs/quick-note-fix.md에 기록한다.</p>
+<ul>
+  <li>Swift 대신 Electron + React + TypeScript를 선택했다. 사용자가 요청한 CLI 중심 확장성과 빠른 UI 반복을 우선했다.</li>
+  <li>Markdown 파일을 원문으로 두고, 첫 로컬 버전은 인메모리 관계 계산을 사용한다. SQLite 인덱스는 메모가 늘어날 때 추가한다.</li>
+  <li>기본 AI 동작은 버튼으로만 실행한다. 메모 저장이나 문서 열기로 CLI를 호출하지 않는다.</li>
+  <li>Electron renderer에는 Node 권한을 노출하지 않고 preload의 제한된 IPC API만 제공한다.</li>
+</ul>
+<h2>2026-09-08 MORI 2일차 backend</h2>
+<ul>
+  <li>빈 폴더는 기존 Note.folder와 별도로 <code>.wiki/folders.json</code>에 저장하고, 시작할 때 기존 문서의 폴더를 병합한다.</li>
+  <li>폴더 rename/delete는 하나의 Vault 직렬 큐에서 처리한다. batch 실패 시 노트 원문과 폴더 목록을 원복하고 이전 폴더 경로를 alias로 남긴다.</li>
+  <li>OpenAI API 키는 Vault 외부 userData/Secrets에 safeStorage 암호문으로만 저장한다. Vault export와 renderer bootstrap에는 평문 키가 포함되지 않는다.</li>
+  <li>단축키는 main process를 단일 실행 진입점으로 삼는다. app scope는 before-input-event, global scope는 globalShortcut을 사용하며 recorder 중 두 경로를 중단한다.</li>
+</ul>
+<p>OpenAI Responses 직접 연결은 raw REST envelope를 처리하며 저장 비활성화, 입력·응답·출력 한도, timeout, 취소와 사용자용 오류 변환을 적용했다. 실제 네트워크 AI 호출과 개인 키 검증은 자동 테스트 범위에서 제외했다.</p>
+<h2>Deviations</h2>
+<ul>
+  <li>초기 배포 문서의 macOS 14 최소 버전은 현재 UI 프로토타입에 명시적으로 강제하지 않는다. Electron 런타임이 지원하는 실제 환경은 패키징 단계에서 검증한다.</li>
+  <li>CloudKit, iPhone 동기화, Developer ID 공증, 공개 배포는 맥 v1 범위 밖이다.</li>
+  <li>DMG·앱은 아직 공증하지 않았다. arm64 MORI 앱 번들에 MORI 전용 아이콘을 포함한다.</li>
+</ul>
+<h2>Tradeoffs</h2>
+<ul>
+  <li>Electron은 SwiftUI보다 앱 크기와 메모리 사용량이 크지만, React UI와 CLI·캡처 통합을 한 언어로 유지한다.</li>
+  <li>CLI는 인증된 로컬 Claude·Codex 실행 파일을 호출한다. 모델을 앱에 내려받지 않는다. 원격 OpenAI API를 선택하면 API 키를 암호화해 보관한다.</li>
+  <li>AI 결과는 원문과 별도로 저장하고 사용자가 추가할 때만 원문 아래에 삽입한다.</li>
+</ul>
+<h2>Open questions</h2>
+<h2>2026-09-07 동작 수정</h2>
+<p>후속 요청에 따라 Codex 기본 모델은 gpt-5.6-luna로 변경했다. 사용자가 말한 로컬 방식은 맥에서 설치된 <code>codex exec</code>를 실행하는 로컬 기반 CLI 연동이다. 완전 오프라인 모델이라는 뜻으로 문서화하지 않는다. 원격 API 직접 연결과 Ollama는 별도 provider 후보로 구분한다. 본문 추가는 저장에 성공한 경우에만 팝업을 닫고 편집기에 포커스를 돌려준다.</p>
+<p>휴지통 UI에 내용 미리보기와 복원·영구 삭제를 추가했다. 영구 삭제 확인 후 본문·해당 문서 버전·AI 결과를 삭제한다. 공유 가능 첨부 파일과 외부 백업은 보존하며 확인창에서 안내한다. 삭제 동작 검증은 임시 테스트 보관함으로만 수행했다.</p>
+<ul>
+  <li>검색 입력창 누락과 ⌘K 포커스 실패를 수정하고 실제 Electron 화면에서 검증했다.</li>
+  <li>편집기 상단에 요약·AI 작성 버튼을 추가했다. 후속 요청에 따라 별도 작성 프롬프트로 빈 메모에도 초안을 생성한다. 빈 본문이고 생성 시작 이후 변경이 없을 때만 자동 입력하며 기존 본문은 결과 확인 후 추가한다.</li>
+  <li>검색 단축키는 대화상자를 닫고 검색창의 텍스트를 선택한다. 검색으로 이동할 때 AI는 계속 진행한다. Enter는 첫 결과를 열고 본문에 포커스를 옮긴다.</li>
+  <li>단축키를 키 입력으로 지정하며, 시작 시 등록 실패 경고가 보관함 로딩에 지워지던 문제를 수정했다.</li>
+  <li>설정의 파일 선택은 임시 설정에만 반영한다. 고정 필터와 Markdown 미리보기를 연결하고 종료 전에 저장을 완료한다.</li>
+  <li>외부 폰트 요청을 제거했다. 화면 테스트는 임시 보관함·테스트 CLI로 실행했고 실제 Codex 요약은 별도 테스트 문장으로 확인했다. 실제 시스템 캡처 권한과 Claude 실연결은 이번 검증에 포함하지 않았다.</li>
+</ul>
+<ul>
+  <li>Electron 유지와 Tauri 전환은 실제 CPU·메모리 사용량을 측정한 뒤 결정한다.</li>
+  <li>전체 그래프가 커지면 SQLite FTS/임베딩 인덱스를 도입할 기준을 실제 보관함 크기로 정한다.</li>
+  <li>아이폰 연결 방식은 맥이 켜져 있지 않을 때의 AI 대기 요구와 함께 별도 설계한다.</li>
+  <li>폴더·Obsidian 참고·Codex CLI와 원격 API 직접 연결·추가 아이디어는 <a href="Docs/next-roadmap.md">Docs/next-roadmap.md</a>에 정리했다.</li>
+  <li>다음 작업에서 모델은 select 목록, 캡처·빠른 메모는 실제 키 입력 recorder로 변경한다. macOS Spotlight와 충돌하는 ⌘Space는 기본값으로 사용하지 않는다.</li>
+  <li>단축키 조합뿐 아니라 캡처·빠른 메모·검색·AI 초안 등 동작과 단축키의 매핑 자체를 사용자가 커스텀하는 요구를 <a href="Docs/next-roadmap.md">Docs/next-roadmap.md</a>에 추가했다.</li>
+</ul>
