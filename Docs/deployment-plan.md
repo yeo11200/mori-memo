@@ -1,6 +1,6 @@
 # MORI 배포 계획
 
-작성일: 2026-09-08 · 현재 버전: 0.2.0
+작성일: 2026-09-08 · 현재 버전: 0.2.1
 
 ## 현재 상태
 
@@ -25,8 +25,10 @@ npm run build
 node scripts/smoke.mjs
 node scripts/startup-smoke.mjs
 node scripts/quick-note-smoke.mjs
+node scripts/graph-smoke.mjs
 npm run package:mac
 node scripts/quick-note-smoke.mjs --packaged
+node scripts/graph-smoke.mjs --packaged
 ```
 
 화면 테스트는 macOS GUI 세션에서 임시 보관함으로 수행한다. 실제 사용자 데이터로 테스트하지 않는다. 업데이트 전 실행 중인 이전 앱을 정상 종료하고 프로세스 종료를 확인한다. 새 번들을 실행한 뒤 설정의 버전·모델 선택·API 입력과 빠른 메모를 확인한다.

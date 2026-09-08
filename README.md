@@ -10,6 +10,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [2일차 구현·검증 기록](Docs/day2-implementation.md)
 - [백엔드 구현 보고서](Docs/day2-backend-report.md)
 - [빠른 메모와 설정 화면 수정](Docs/quick-note-fix.md)
+- [폴더 중심 그래프](Docs/folder-graph.md)
 - [CLI 연동 보고서](Docs/cli-report.md)
 - [구현 결정·제약 기록](implementation-notes.html)
 
@@ -28,6 +29,7 @@ npm run build
 node scripts/smoke.mjs
 node scripts/startup-smoke.mjs
 node scripts/quick-note-smoke.mjs
+node scripts/graph-smoke.mjs
 npm run package:mac
 ```
 
@@ -36,6 +38,8 @@ npm run package:mac
 **MORI 0.2.0:** 기본 **⌘⇧Space**로 백그라운드 빠른 메모 창을 열고 **⌘Enter**로 미분류에 저장합니다. 앱 창을 닫아도 메뉴 막대 M에서 대기합니다. 완전 종료 시 전역 단축키도 종료되며, 설정의 **로그인 시 MORI 자동 실행**을 켜면 다음 로그인부터 자동으로 실행됩니다. Escape로 숨긴 빠른 메모 초안은 앱을 완전히 종료하기 전에 저장하세요.
 
 ## 기능
+
+**0.2.1 폴더 그래프:** 왼쪽 **그래프**에서 폴더별 메모 수와 폴더 간 링크 수를 확인합니다. 폴더 → 메모 순서로 선택하면 들어오는 링크·나가는 링크·미해결 링크가 표시됩니다. **확대** 버튼으로 넓게 보고, **이 메모 열기**로 편집합니다. 같은 폴더에 속한다는 이유로 연결선을 만들지 않습니다.
 
 - Markdown 원문 저장, 자동 저장, 버전 충돌 감지, 휴지통·복구, 내보내기
 - 폴더 생성·이름 변경·삭제·이동, 폴더별 필터와 메모 수
