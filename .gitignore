@@ -12,6 +12,8 @@ release/
 .env.*
 !.env.example
 Vault/
+!electron/vault/
+!electron/vault/**
 Secrets/
 *.p12
 *.p8

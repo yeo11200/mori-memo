@@ -190,6 +190,7 @@ const handleIPC = () => {
     return vault.handleCreate(title, body, folder);
   });
   handleOn('save', (note: Note) => vault.handleSave(note));
+  handleOn('add-link', (sourceId: string, targetId: string, revision: string, reason: string) => vault.handleAddLink(sourceId, targetId, revision, reason));
   handleOn('trash', (id: string) => vault.handleTrash(id));
   handleOn('list-trash', () => vault.handleListTrash());
   handleOn('restore', (id: string) => vault.handleRestore(id));

@@ -15,6 +15,21 @@ const handleSetup = async () => {
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 
 describe('Markdown vault', () => {
+  it('adds a link with history and rejects stale revisions or a queued deletion', async () => {
+    const { vault } = await handleSetup();
+    const source = await vault.handleCreate('원문', '보존할 본문');
+    const target = await vault.handleCreate('대상', '대상 본문');
+    const saved = await vault.handleAddLink(source.id, target.id, source.revision, '계획의 근거');
+    expect(saved.body).toContain('보존할 본문');
+    expect(saved.body).toContain('[[' + target.id + '|대상]]');
+    expect((await vault.handleHistory(source.id)).some(note => note.body === source.body)).toBe(true);
+    await expect(vault.handleAddLink(source.id, target.id, source.revision, '')).rejects.toThrow(/변경/);
+    const other = await vault.handleCreate('다른 원문', '그대로');
+    const deletion = vault.handleTrash(target.id);
+    await expect(vault.handleAddLink(other.id, target.id, other.revision, '')).rejects.toThrow();
+    await deletion;
+    expect((await vault.handleGet(other.id)).body).toBe('그대로');
+  });
   it('permanently removes only a trashed note and its history and AI results', async () => {
     const { root, vault } = await handleSetup();
     const note = await vault.handleCreate('삭제 대상', '초안');

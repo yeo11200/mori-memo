@@ -4,6 +4,7 @@ import { SettingsPanel, handleFormatShortcut } from './SettingsPanel';
 import { FolderPanel } from './FolderPanel';
 import { NoteEditor } from './NoteEditor';
 import { CommandPalette } from './CommandPalette';
+import { LinkDialog } from './LinkDialog';
 import { useWiki } from './hooks/useWiki';
 import { MarkdownView } from '../components/features/markdown-view';
 import { GraphView } from '../components/features/graph-view';
@@ -17,6 +18,7 @@ export const App = () => {
   const [query, setQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [showPalette, setShowPalette] = useState(false);
+  const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [preview, setPreview] = useState(false);
   const editOnSelect = useRef<string | null>(null);
@@ -27,6 +29,7 @@ export const App = () => {
   const [trash, setTrash] = useState<typeof wiki.notes>([]);
   const filteredNotes = useMemo(() => wiki.notes.filter(note => (!selectedFolder || note.folder === selectedFolder) && (!pinnedOnly || note.pinned) && `${note.title} ${note.body}`.toLowerCase().includes(query.toLowerCase())), [wiki.notes, query, pinnedOnly, selectedFolder]);
   const activeNote = wiki.draft;
+  const linkSource = wiki.draft?.id === linkSourceId ? wiki.draft : wiki.notes.find(note => note.id === linkSourceId);
   const handleShortcutLabel = (action: string) => handleFormatShortcut(wiki.settings?.shortcuts?.find(binding => binding.action === action)?.accelerator || '');
   useEffect(() => {
     setPreview(editOnSelect.current === wiki.draft?.id ? false : Boolean(wiki.draft?.body.trim()));
@@ -36,7 +39,7 @@ export const App = () => {
   const related = activeNote ? handleRelatedNotes(activeNote, wiki.notes).filter(item => !backlinks.some(note => note.id === item.note.id)) : [];
 
   const handleFocusSearch = useCallback(() => {
-    setShowAI(false); setShowCreate(false); setShowTrash(false); setShowPalette(false); setPinnedOnly(false); setSelectedFolder('');
+    setLinkSourceId(null); setShowAI(false); setShowCreate(false); setShowTrash(false); setShowPalette(false); setPinnedOnly(false); setSelectedFolder('');
     requestAnimationFrame(() => {
       const input = document.getElementById('wiki-search') as HTMLInputElement | null;
       input?.focus(); input?.select();
@@ -89,12 +92,13 @@ export const App = () => {
         <button className="wiki__example" onClick={() => void wiki.handleExample()}><Sparkles size={14} />예제 보관함 추가</button>
       </aside>
       <section className="wiki__editor">
-        {wiki.draft ? <><div className="wiki__editor__toolbar"><span className="wiki__crumb">{wiki.draft.folder} <span>/</span> {wiki.draft.title}</span><div className="wiki__editor__actions"><span className="wiki__save-state">{wiki.saveStatus}</span><button className="wiki__icon-button" title="화면 캡처" onClick={() => void wiki.handleCapture()}><ArrowUpRight size={16} /></button><button className="wiki__icon-button wiki__danger" title="휴지통으로 이동" onClick={() => void wiki.handleDelete()}><Trash2 size={16} /></button><button className="wiki__icon-button" title={wiki.draft.pinned ? '고정 해제' : '메모 고정'} onClick={() => wiki.handleEdit({ pinned: !wiki.draft!.pinned })}><Pin size={17} /></button></div></div><div className="wiki__writing-tools"><select aria-label="메모 폴더" disabled={wiki.isMutating} value={wiki.draft.folder} onChange={event => wiki.handleEdit({ folder: event.target.value })}>{[...new Set([...wiki.folders, wiki.draft.folder])].map(folder => <option key={folder} value={folder}>{folder}</option>)}</select><button className="wiki__button wiki__button--primary" onClick={() => { setShowAI(true); void wiki.handleAI('summary'); }} disabled={!!wiki.aiAction}><Sparkles size={15} />요약하기</button><button className="wiki__button" onClick={() => setShowAI(true)}><Wand2 size={15} />AI로 작성·정리</button><button className="wiki__button" onClick={() => setPreview(!preview)}>{preview ? '편집하기' : '미리보기'}</button></div><input disabled={wiki.isMutating} aria-label="메모 제목" className="wiki__title-input" value={wiki.draft.title} onChange={event => wiki.handleEdit({ title: event.target.value })} placeholder="제목 없는 메모" />{preview ? <MarkdownView body={wiki.draft.body} onLink={handleOpenLink} /> : <NoteEditor key={wiki.draft.id} note={wiki.draft} notes={wiki.notes} disabled={wiki.isMutating} onEdit={body => wiki.handleEdit({ body })} />}<div className="wiki__editor__footer"><span>Markdown 지원 · [[문서]]로 연결</span><span><kbd>⌘ S</kbd> 저장</span></div></> : <div className="wiki__empty-editor"><Sparkles size={26} /><h2>첫 메모를 시작해 보세요</h2><p>당신의 생각이 연결된 지식이 됩니다.</p><button onClick={() => setShowCreate(true)}><Plus size={16} /> 새 메모 만들기</button><button onClick={() => setShowAI(true)}><Wand2 size={16} />AI로 초안 작성</button></div>}
+        {wiki.draft ? <><div className="wiki__editor__toolbar"><span className="wiki__crumb">{wiki.draft.folder} <span>/</span> {wiki.draft.title}</span><div className="wiki__editor__actions"><span className="wiki__save-state">{wiki.saveStatus}</span><button className="wiki__icon-button" title="화면 캡처" onClick={() => void wiki.handleCapture()}><ArrowUpRight size={16} /></button><button className="wiki__icon-button wiki__danger" title="휴지통으로 이동" onClick={() => void wiki.handleDelete()}><Trash2 size={16} /></button><button className="wiki__icon-button" title={wiki.draft.pinned ? '고정 해제' : '메모 고정'} onClick={() => wiki.handleEdit({ pinned: !wiki.draft!.pinned })}><Pin size={17} /></button></div></div><div className="wiki__writing-tools"><select aria-label="메모 폴더" disabled={wiki.isMutating} value={wiki.draft.folder} onChange={event => wiki.handleEdit({ folder: event.target.value })}>{[...new Set([...wiki.folders, wiki.draft.folder])].map(folder => <option key={folder} value={folder}>{folder}</option>)}</select><button className="wiki__button wiki__button--primary" onClick={() => { setShowAI(true); void wiki.handleAI('summary'); }} disabled={!!wiki.aiAction}><Sparkles size={15} />요약하기</button><button className="wiki__button" onClick={() => setShowAI(true)}><Wand2 size={15} />AI로 작성·정리</button><button className="wiki__button" disabled={wiki.isMutating} onClick={() => setLinkSourceId(wiki.draft!.id)}><Link2 size={15} />연결 추가</button><button className="wiki__button" onClick={() => setPreview(!preview)}>{preview ? '편집하기' : '미리보기'}</button></div><input disabled={wiki.isMutating} aria-label="메모 제목" className="wiki__title-input" value={wiki.draft.title} onChange={event => wiki.handleEdit({ title: event.target.value })} placeholder="제목 없는 메모" />{preview ? <MarkdownView body={wiki.draft.body} onLink={handleOpenLink} /> : <NoteEditor key={wiki.draft.id} note={wiki.draft} notes={wiki.notes} disabled={wiki.isMutating} onEdit={body => wiki.handleEdit({ body })} />}<div className="wiki__editor__footer"><span>Markdown 지원 · [[문서]]로 연결</span><span><kbd>⌘ S</kbd> 저장</span></div></> : <div className="wiki__empty-editor"><Sparkles size={26} /><h2>첫 메모를 시작해 보세요</h2><p>당신의 생각이 연결된 지식이 됩니다.</p><button onClick={() => setShowCreate(true)}><Plus size={16} /> 새 메모 만들기</button><button onClick={() => setShowAI(true)}><Wand2 size={16} />AI로 초안 작성</button></div>}
       </section>
       <aside className="wiki__right-panel">
-        {panel === 'settings' && wiki.settings ? <SettingsPanel settings={wiki.settings} onSave={handleSaveSettings} onClose={() => setPanel('links')} /> : panel === 'graph' ? <><PanelHeader title="지식 그래프" onClose={() => setPanel('links')} /><GraphView notes={wiki.notes} folders={wiki.folders} selectedId={wiki.draft?.id} onSelect={id => void wiki.handleSelect(id)} /></> : activeNote ? <LinksPanel draft={activeNote} notes={wiki.notes} backlinks={backlinks} related={related} onOpen={handleOpenLink} onGraph={() => setPanel('graph')} onAI={() => setShowAI(true)} /> : <div className="wiki__panel__hint">메모를 선택하면 연결된 생각을 보여드려요.</div>}
+        {panel === 'settings' && wiki.settings ? <SettingsPanel settings={wiki.settings} onSave={handleSaveSettings} onClose={() => setPanel('links')} /> : panel === 'graph' ? <><PanelHeader title="지식 그래프" onClose={() => setPanel('links')} /><GraphView notes={wiki.notes} folders={wiki.folders} selectedId={wiki.draft?.id} onSelect={id => void wiki.handleSelect(id)} onAddLink={setLinkSourceId} /></> : activeNote ? <LinksPanel draft={activeNote} notes={wiki.notes} backlinks={backlinks} related={related} onOpen={handleOpenLink} onGraph={() => setPanel('graph')} onAI={() => setShowAI(true)} /> : <div className="wiki__panel__hint">메모를 선택하면 연결된 생각을 보여드려요.</div>}
       </aside>
     </main>
+    {linkSource && <LinkDialog source={linkSource} notes={wiki.notes} onAdd={(targetId, reason) => wiki.handleAddLink(linkSource.id, targetId, reason)} onClose={() => setLinkSourceId(null)} />}
     {showPalette && wiki.settings && <CommandPalette settings={wiki.settings} onClose={() => setShowPalette(false)} onCommand={handleCommand} />}
     {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreate={template => { setShowCreate(false); void wiki.handleCreate(template, selectedFolder || undefined); }} />}
     {showAI && <AIModal action={wiki.aiAction} result={wiki.aiResult} applied={wiki.appliedResult} onRun={(action, instruction) => void wiki.handleAI(action, instruction)} onApply={async () => { if (await wiki.handleApplyResult()) { setShowAI(false); setPreview(false); requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('.wiki__body-input')?.focus()); } }} onCancel={() => { setShowAI(false); wiki.handleCancelAI(); }} />}

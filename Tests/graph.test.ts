@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { handleBuildGraph } from '../shared/graph';
+import { handleBuildGraph, handleLayoutNoteGroups } from '../shared/graph';
 import type { Note } from '../shared/types';
 
 const handleNote = (id: string, folder: string, title: string, body = ''): Note => ({ id, folder, title, body, pinned: false, createdAt: '', updatedAt: '', revision: '1' });
@@ -25,4 +25,21 @@ describe('folder graph', () => {
     expect(graph.edges).toEqual([{ source: 'c', target: 'a' }]);
     expect(graph.unresolved.map(link => link.target)).toEqual(['회의', '없는 문서']);
   });
+});
+
+
+it('keeps memo positions distinct and inside their folder region at both sizes', () => {
+  const notes = Array.from({ length: 19 }, (_, i) => handleNote(String(i), i < 14 ? '업무' : '독서', '메모'));
+  for (const width of [360, 720]) {
+    const layout = handleLayoutNoteGroups(notes, width);
+    expect(new Set([...layout.positions.values()].map(p => `${p.x},${p.y}`)).size).toBe(notes.length);
+    for (const note of notes) {
+      const position = layout.positions.get(note.id)!;
+      const region = layout.regions.find(region => region.name === note.folder)!;
+      expect(position.x).toBeGreaterThan(region.x);
+      expect(position.x).toBeLessThan(region.x + region.width);
+      expect(position.y).toBeGreaterThan(region.y);
+      expect(position.y + 33).toBeLessThan(region.y + region.height);
+    }
+  }
 });

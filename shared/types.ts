@@ -54,6 +54,7 @@ export interface WikiAPI {
   handleBootstrap(): Promise<Bootstrap>;
   handleCreateNote(template: string): Promise<Note>;
   handleSaveNote(note: Note): Promise<Note>;
+  handleAddLink(sourceId: string, targetId: string, revision: string, reason: string): Promise<Note>;
   handleTrashNote(id: string): Promise<void>;
   handleListTrash(): Promise<Note[]>;
   handleRestoreNote(id: string): Promise<Note>;

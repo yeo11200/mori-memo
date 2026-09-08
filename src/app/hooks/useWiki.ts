@@ -180,6 +180,21 @@ export const useWiki = () => {
     setFolders(await window.wiki.handleListFolders());
   };
 
+  const handleAddLink = async (sourceId: string, targetId: string, reason: string) => {
+    if (mutatingRef.current || busyRef.current) throw new Error('진행 중인 작업을 마친 뒤 연결해 주세요.');
+    mutatingRef.current = true; setMutating(true);
+    try {
+      await handleFlush();
+      while (dirtyRef.current) await handleFlush();
+      const source = notesRef.current.find(note => note.id === sourceId);
+      if (!source) throw new Error('연결할 원문을 찾을 수 없습니다.');
+      const saved = await window.wiki.handleAddLink(source.id, targetId, source.revision, reason);
+      handleSetNotes(notesRef.current.map(note => note.id === saved.id ? saved : note));
+      if (draftRef.current?.id === saved.id) { handleSetDraft(saved); setSaveStatus('저장됨'); }
+      setNotice('메모에 연결을 추가했습니다.');
+    } finally { mutatingRef.current = false; setMutating(false); }
+  };
+
   const handleFolderChange = async (action: 'create' | 'rename' | 'delete', from: string, to?: string) => {
     if (mutatingRef.current || busyRef.current) { setError('진행 중인 작업을 마친 뒤 폴더를 변경해 주세요.'); return false; }
     mutatingRef.current = true; setMutating(true);
@@ -233,7 +248,7 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
-  return { notes, folders, isMutating, handleFolderChange, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
+  return { notes, folders, isMutating, handleFolderChange, handleAddLink, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
     handleEdit, handleFlush, handleSelect, handleCreate, handleDelete, handleAI, handleApplyResult, handleCapture, handleImport, handleRestore, handleExample,
     handleReportError, handleReloadNotes, handleClearError: () => setError(''), handleClearNotice: () => setNotice(''), handleSetSettings: setSettings,
     handleCancelAI: () => window.wiki.handleCancelAI(),

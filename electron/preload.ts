@@ -7,6 +7,7 @@ const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
   handleBootstrap: () => ipcRenderer.invoke('wiki:bootstrap'),
   handleCreateNote: template => ipcRenderer.invoke('wiki:create', template),
   handleSaveNote: note => ipcRenderer.invoke('wiki:save', note),
+  handleAddLink: (sourceId, targetId, revision, reason) => ipcRenderer.invoke('wiki:add-link', sourceId, targetId, revision, reason),
   handleTrashNote: id => ipcRenderer.invoke('wiki:trash', id),
   handleListTrash: () => ipcRenderer.invoke('wiki:list-trash'),
   handleRestoreNote: id => ipcRenderer.invoke('wiki:restore', id),
