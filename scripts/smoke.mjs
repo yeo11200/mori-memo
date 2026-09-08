@@ -16,7 +16,8 @@ process.stdin.on('end', () => {
 `, { mode: 0o700 });
 await mkdir(join(directory, 'Vault', '.wiki'), { recursive: true });
 await writeFile(join(directory, 'Vault', '.wiki', 'settings.json'), JSON.stringify({ provider: 'codex', codexPath: fixture, claudePath: '', model: '', captureShortcut: '', quickNoteShortcut: '', customInstruction: '정리해 주세요.' }));
-const app = await electron.launch({ args: [resolve('.')], env: { ...process.env, WIKI_DATA_DIR: directory } });
+const packaged = process.argv.includes('--packaged');
+const app = await electron.launch({ ...(packaged ? { executablePath: resolve('release/mac-arm64/MORI.app/Contents/MacOS/MORI'), args: [] } : { args: [resolve('.')] }), env: { ...process.env, WIKI_DATA_DIR: directory } });
 const errors = [];
 // CDP keyboard events bypass Electron before-input-event. Exercise native app bindings through webContents.
 const handleNativeKey = async (keyCode, modifiers = ['meta']) => app.evaluate(({ BrowserWindow }, { keyCode, modifiers }) => {
@@ -92,7 +93,10 @@ try {
  await handleNativeKey('J', ['meta', 'alt']);
  await expect(page.getByLabel('메모 검색')).toBeFocused();
  await handleNativeKey('P', ['meta', 'shift']);
- await page.getByLabel('명령 또는 메모 검색').fill('할 일 추출');
+ await page.getByLabel('명령 검색').fill('금요일 회의');
+ await expect(page.getByText('일치하는 명령이 없습니다.', { exact: true })).toBeVisible();
+ await expect(page.locator('.wiki__palette-list button')).toHaveCount(0);
+ await page.getByLabel('명령 검색').fill('할 일 추출');
  await page.keyboard.press('Enter');
  await expect(page.locator('.wiki__ai-result')).toContainText('테스트 요약');
  await page.getByRole('dialog').getByLabel('닫기').click();
@@ -152,9 +156,11 @@ try {
  await page.getByLabel('폴더 이름', { exact: true }).fill('지식 정원');
  await page.getByRole('button', { name: '폴더 저장', exact: true }).click();
  await expect(page.getByLabel('메모 폴더', { exact: true })).toHaveValue('지식 정원');
- await page.getByRole('button', { name: '명령 팔레트', exact: true }).click();
- await page.getByLabel('명령 또는 메모 검색').fill('링크 테스트');
+ await handleNativeKey('K');
+ await page.getByLabel('메모 검색').fill('링크 테스트');
  await page.keyboard.press('Enter');
+ await expect(page.getByLabel('메모 내용')).toBeFocused();
+ await page.getByRole('button', { name: '미리보기', exact: true }).click();
  await page.locator('.wiki__inline__link').click();
  await expect(page.getByLabel('메모 제목')).toHaveValue('연결 대상');
  await page.getByLabel('지식 정원 폴더 삭제').click();
