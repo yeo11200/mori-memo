@@ -7,6 +7,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [Apple 메모 연동 사용법·구현 기록 (0.4.0)](Docs/apple-notes-implementation.md)
 - [MORI 앱 개발계획서](Docs/mori-app-development-plan.md)
 - [Codex·Claude AI 스킬 개발계획서](Docs/mori-ai-skills-development-plan.md)
+- [무료 배포·마케팅·수익화 계획](Docs/marketing-revenue-plan.md)
 - [다음 개발 로드맵](Docs/next-roadmap.md)
 - [배포 계획](Docs/deployment-plan.md)
 - [Mac v1 구현 계획](Docs/mac-v1-plan.md)
@@ -38,7 +39,7 @@ node scripts/graph-smoke.mjs
 npm run package:mac
 ```
 
-`release/mac-arm64/MORI.app`에 Apple Silicon용 로컬 앱이 생성됩니다. 현재 앱은 Developer ID 서명·공증 전 단계입니다.
+`release/mac-arm64/MORI.app`에 Apple Silicon용 로컬 앱이 생성됩니다. `npm run package:dmg`는 무료 공개 베타용 Apple Silicon DMG를 만듭니다. 현재 빌드는 Developer ID 서명·공증 전 단계이며 배포 채널과 설치 안내는 [배포 계획](Docs/deployment-plan.md)을 따릅니다.
 
 **MORI 0.2.0:** 기본 **⌘⇧Space**로 백그라운드 빠른 메모 창을 열고 **⌘Enter**로 미분류에 저장합니다. 앱 창을 닫아도 메뉴 막대 M에서 대기합니다. 완전 종료 시 전역 단축키도 종료되며, 설정의 **로그인 시 MORI 자동 실행**을 켜면 다음 로그인부터 자동으로 실행됩니다. Escape로 숨긴 빠른 메모 초안은 앱을 완전히 종료하기 전에 저장하세요.
 
