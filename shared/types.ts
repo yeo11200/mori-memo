@@ -1,3 +1,4 @@
+import type { AppleProvenance, AppleSelection, AppleImportState, AppleScan } from './apple-notes';
 export interface Note {
   id: string;
   title: string;
@@ -8,6 +9,7 @@ export interface Note {
   updatedAt: string;
   revision: string;
   aliases?: string[];
+  appleSource?: AppleProvenance;
 }
 
 export interface AppSettings {
@@ -49,6 +51,10 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleAppleState(): Promise<AppleImportState>;
+  handleAppleScan(): Promise<AppleScan>;
+  handleAppleSync(selection: AppleSelection): Promise<AppleImportState>;
+  handleAppleResolve(sourceId: string, choice: 'keep' | 'apple' | 'merge', revision: string, body?: string): Promise<AppleImportState>;
   handleSaveQuickNote(body: string): Promise<void>;
   handleHideQuickNote(): Promise<void>;
   handleBootstrap(): Promise<Bootstrap>;

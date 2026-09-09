@@ -4,6 +4,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import type { Note } from '../../shared/types';
 import { handleAppendLink } from '../../shared/link-edit';
+import type { AppleNote, AppleProvenance, AppleResult } from '../../shared/apple-notes';
+import { handleContentHash, handleImportStatus } from '../apple-notes/compare';
 
 const MAX_BODY = 2_000_000;
 const handleHash = (text: string) => createHash('sha256').update(text).digest('hex');
@@ -21,7 +23,7 @@ const handleDeserialize = (text: string): Note => {
   const meta = JSON.parse(match[1]);
   handleValidateId(meta.id);
   if (typeof meta.title !== 'string' || typeof meta.revision !== 'string' || typeof meta.folder !== 'string') throw new Error('문서 정보가 올바르지 않습니다.');
-  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
+  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, appleSource: meta.appleSource, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
 };
 const handleAtomicWrite = async (path: string, text: string) => {
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -144,18 +146,20 @@ export class Vault {
   }
 
   handleCreate(title: string, body = '', folder = DEFAULT_FOLDER): Promise<Note> {
-    return this.handleQueue(async () => {
+    return this.handleQueue(() => this.handleCreateNow(title, body, folder));
+  }
+
+  private async handleCreateNow(title: string, body: string, folder: string, appleSource?: AppleProvenance): Promise<Note> {
       if (body.length > MAX_BODY) throw new Error('메모는 2MB 이하로 작성해 주세요.');
       const now = new Date().toISOString();
       const normalizedFolder = handleValidateFolder(folder || DEFAULT_FOLDER);
-      const note: Note = { id: randomUUID(), title: title.trim().slice(0, 160) || '제목 없는 메모', body, folder: normalizedFolder, pinned: false, createdAt: now, updatedAt: now, revision: randomUUID(), aliases: [] };
+      const note: Note = { id: randomUUID(), title: title.trim().slice(0, 160) || '제목 없는 메모', body, folder: normalizedFolder, pinned: false, createdAt: now, updatedAt: now, revision: randomUUID(), aliases: [], appleSource };
       const text = handleSerialize(note);
       await handleAtomicWrite(join(this.root, 'Notes', `${note.id}.md`), text);
       this.fingerprints.set(note.id, handleHash(text));
       const folders = await this.handleReadFolders();
       if (!folders.includes(normalizedFolder)) await this.handleWriteFolders([...folders, normalizedFolder]);
       return note;
-    });
   }
 
   handleSave(input: Note): Promise<Note> {
@@ -171,7 +175,7 @@ export class Vault {
     });
   }
 
-  private async handleSaveNow(input: Note): Promise<Note> {
+  private async handleSaveNow(input: Note, appleSource?: AppleProvenance): Promise<Note> {
       const id = handleValidateId(input.id);
       if (typeof input.body !== 'string' || input.body.length > MAX_BODY || typeof input.title !== 'string' || typeof input.folder !== 'string') throw new Error('메모 내용이 올바르지 않습니다.');
       const path = join(this.root, 'Notes', `${id}.md`);
@@ -181,22 +185,48 @@ export class Vault {
       const title = input.title.trim().slice(0, 160) || '제목 없는 메모';
       const knownFolders = await this.handleReadFolders();
       const folder = knownFolders.includes(input.folder) ? input.folder : handleValidateFolder(input.folder || DEFAULT_FOLDER);
-      if (title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
+      if (!appleSource && title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
       const aliases = new Set(previous.aliases || []);
       if (title !== previous.title || folder !== previous.folder) {
         aliases.add(previous.title);
         aliases.add(`${previous.folder}/${previous.title}`);
       }
-      const note: Note = { ...previous, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], updatedAt: new Date().toISOString(), revision: randomUUID() };
+      const note: Note = { ...previous, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], appleSource: appleSource || previous.appleSource, updatedAt: new Date().toISOString(), revision: randomUUID() };
       const historyDir = join(this.root, '.wiki/history', id);
       await mkdir(historyDir, { recursive: true });
-      await writeFile(join(historyDir, `${previous.revision}.md`), source, { mode: 0o600 });
+      if (title !== previous.title || folder !== previous.folder || input.body !== previous.body || input.pinned !== previous.pinned) await writeFile(join(historyDir, `${previous.revision}.md`), source, { mode: 0o600 });
       const text = handleSerialize(note);
       await handleAtomicWrite(path, text);
       this.fingerprints.set(id, handleHash(text));
       const folders = await this.handleReadFolders();
       if (!folders.includes(folder)) await this.handleWriteFolders([...folders, folder]);
       return note;
+  }
+
+  /** 원본 ID와 가져오기 정보를 본문과 함께 원자적으로 저장합니다. */
+  handleImportApple(source: AppleNote, choice?: 'keep' | 'apple' | 'merge', revision?: string, mergedBody?: string): Promise<AppleResult> {
+    return this.handleQueue(async () => {
+      const notes = await this.handleList();
+      const matches = notes.filter(note => note.appleSource?.sourceId === source.id);
+      if (matches.length > 1) throw new Error('같은 원본을 참조하는 메모가 여럿입니다.');
+      const note = matches[0];
+      const base = { sourceId: source.id, title: source.title, noteId: note?.id };
+      if (!note && (await this.handleListTrash()).some(item => item.appleSource?.sourceId === source.id)) return { ...base, status: 'trashed', message: '휴지통에서 복원한 후 다시 동기화하세요.' };
+      if (source.error) return { ...base, status: 'failed', message: source.error };
+      if (choice && (!note || note.revision !== revision)) throw new Error('메모가 변경되었습니다. 검토 화면을 다시 열어 주세요.');
+      const status = handleImportStatus(source, note);
+      if (!choice && status === 'review') return { ...base, status };
+      const now = new Date().toISOString();
+      if (!choice && status === 'unchanged') {
+        await this.handleSaveNow(note!, { ...note!.appleSource!, sourceTitle: source.title, sourceFolder: source.folder, lastSeenAt: now, warnings: source.warnings });
+        return { ...base, status };
+      }
+      const content = choice === 'keep' ? note! : choice === 'merge' ? { title: note!.title, body: mergedBody! } : source;
+      if (typeof content.body !== 'string') throw new Error('병합할 내용을 입력해 주세요.');
+      const provenance: AppleProvenance = { sourceId: source.id, sourceTitle: source.title, sourceFolder: source.folder, importedAt: note?.appleSource?.importedAt || now, lastSeenAt: now, sourceHash: handleContentHash(source), importedHash: choice === 'keep' || choice === 'merge' ? note!.appleSource!.importedHash : handleContentHash(content), warnings: source.warnings };
+      const saved = note ? await this.handleSaveNow({ ...note, title: content.title, body: content.body }, provenance) : await this.handleCreateNow(content.title, content.body, 'Apple 메모', provenance);
+      return { ...base, noteId: saved.id, status: note ? 'updated' : 'created' };
+    });
   }
 
   handleTrash(id: string) {

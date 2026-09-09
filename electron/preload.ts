@@ -2,6 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleAppleState: () => ipcRenderer.invoke('wiki:apple-state'),
+  handleAppleScan: () => ipcRenderer.invoke('wiki:apple-scan'),
+  handleAppleSync: selection => ipcRenderer.invoke('wiki:apple-sync', selection),
+  handleAppleResolve: (id, choice, revision, body) => ipcRenderer.invoke('wiki:apple-resolve', id, choice, revision, body),
   handleSaveQuickNote: body => ipcRenderer.invoke('wiki:quick-save', body),
   handleHideQuickNote: () => ipcRenderer.invoke('wiki:quick-hide'),
   handleBootstrap: () => ipcRenderer.invoke('wiki:bootstrap'),

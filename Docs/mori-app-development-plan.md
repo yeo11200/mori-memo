@@ -1,5 +1,7 @@
 # MORI 앱 개발계획서
 
+> 0.4.0 구현 결과와 실제 지원 범위는 [Apple 메모 구현 기록](apple-notes-implementation.md)을 참고한다. 초기에는 일반 텍스트 본문을 가져오며, MORI만 변경된 경우는 보존하고 양쪽 변경만 검토한다.
+
 > MORI 자체를 개발하기 위한 계획서다. Codex·Claude가 MORI를 읽는 방식은 [MORI AI 스킬 개발계획서](mori-ai-skills-development-plan.md)에서 별도로 다룬다.
 
 ## 목표

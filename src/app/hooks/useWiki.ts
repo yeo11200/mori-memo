@@ -239,8 +239,25 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
+  const handleAppleOperation = async <T,>(work: () => Promise<T>): Promise<T> => {
+    if (mutatingRef.current || busyRef.current) throw new Error('진행 중인 작업을 마친 뒤 가져와 주세요.');
+    mutatingRef.current = true; setMutating(true);
+    try {
+      await handleFlush();
+      while (dirtyRef.current) await handleFlush();
+      try { return await work(); }
+      finally {
+        const data = await window.wiki.handleBootstrap();
+        const activeId = draftRef.current?.id;
+        handleSetNotes(data.notes);
+        handleSetDraft(data.notes.find(note => note.id === activeId) || data.notes[0] || null);
+        setFolders(await window.wiki.handleListFolders());
+      }
+    } finally { mutatingRef.current = false; setMutating(false); }
+  };
+
   const handleClose = async () => {
-    if (mutatingRef.current) { setNotice('폴더 변경이 끝난 뒤 닫아 주세요.'); return; }
+    if (mutatingRef.current) { setNotice('저장 작업이 끝난 뒤 닫아 주세요.'); return; }
     try {
       await handleFlush();
       while (dirtyRef.current) await handleFlush();
@@ -248,7 +265,7 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
-  return { notes, folders, isMutating, handleFolderChange, handleAddLink, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
+  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
     handleEdit, handleFlush, handleSelect, handleCreate, handleDelete, handleAI, handleApplyResult, handleCapture, handleImport, handleRestore, handleExample,
     handleReportError, handleReloadNotes, handleClearError: () => setError(''), handleClearNotice: () => setNotice(''), handleSetSettings: setSettings,
     handleCancelAI: () => window.wiki.handleCancelAI(),

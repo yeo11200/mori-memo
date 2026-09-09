@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Vault } from './vault/vault';
+import { AppleImportService } from './apple-notes/import-service';
+import { handleReadAppleNotes } from './apple-notes/source';
 import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
 import { OpenAIRunner } from './openai/openai-runner';
 import { APIKeyStore } from './openai/api-key-store';
@@ -23,6 +25,7 @@ let tray: Tray | null = null;
 let isQuitting = false;
 let quickSaving = false;
 let vault: Vault;
+let appleImports: AppleImportService;
 let settings: AppSettings;
 let apiKeyStore: APIKeyStore;
 let isCapturing = false;
@@ -175,6 +178,11 @@ const handleIPC = () => {
   });
   ipcMain.handle('wiki:quick-hide', event => { handleValidateQuickSender(event); if (!quickSaving) quickWindow?.hide(); });
   const handleOn = (channel: string, fn: (...args: any[]) => unknown) => ipcMain.handle(`wiki:${channel}`, (event, ...args) => { handleValidateSender(event); return fn(...args); });
+  appleImports = new AppleImportService(vault, handleReadAppleNotes);
+  handleOn('apple-state', () => appleImports.handleState());
+  handleOn('apple-scan', () => appleImports.handleScan());
+  handleOn('apple-sync', (selection) => appleImports.handleSync(selection));
+  handleOn('apple-resolve', (id, choice, revision, body) => appleImports.handleResolve(id, choice, revision, body));
   handleOn('bootstrap', async () => {
     const keyStatus = await apiKeyStore.handleStatus();
     return { notes: await vault.handleList(), settings: { ...settings, apiKeyConfigured: keyStatus.configured }, vaultPath: vault.root, warnings: [...startupWarnings, ...vault.warnings, ...(keyStatus.warning ? [keyStatus.warning] : [])] };

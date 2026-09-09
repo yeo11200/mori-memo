@@ -1,6 +1,6 @@
 {
   "name": "personal-wiki",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Local personal wiki for macOS",
   "type": "module",
@@ -32,6 +32,7 @@
         "dir"
       ],
       "extendInfo": {
+        "NSAppleEventsUsageDescription": "선택한 Apple 메모를 읽어 MORI로 가져옵니다. Apple 메모 원본은 변경하지 않습니다.",
         "NSScreenCaptureUsageDescription": "선택한 화면 영역을 메모에 첨부합니다."
       }
     }

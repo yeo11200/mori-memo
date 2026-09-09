@@ -4,6 +4,9 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 
 ## 계획서와 개발 기록
 
+- [Apple 메모 연동 사용법·구현 기록 (0.4.0)](Docs/apple-notes-implementation.md)
+- [MORI 앱 개발계획서](Docs/mori-app-development-plan.md)
+- [Codex·Claude AI 스킬 개발계획서](Docs/mori-ai-skills-development-plan.md)
 - [다음 개발 로드맵](Docs/next-roadmap.md)
 - [배포 계획](Docs/deployment-plan.md)
 - [Mac v1 구현 계획](Docs/mac-v1-plan.md)
@@ -15,6 +18,8 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [구현 결정·제약 기록](implementation-notes.html)
 
 ## 실행
+
+**Apple 메모 연동:** 상단 **Apple 메모 연동** 또는 첫 메모 화면의 **Apple 메모 가져오기** → **목록 읽기** → 폴더/개별 메모 선택 → **가져오기**. 이후 **연동한 모든 항목**으로 새 메모와 변경을 반영합니다. Apple 원본은 읽기만 하며, MORI와 원본이 함께 수정된 경우 비교 후 선택합니다. 현재 본문은 일반 텍스트로 가져오고 사진·PDF·표·체크 상태는 보존하지 않습니다.
 
 ```sh
 npm install
