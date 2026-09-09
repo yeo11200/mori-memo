@@ -4,7 +4,7 @@ import { handleNotePreview } from '../../../../shared/note-preview';
 import { handleBuildGraph, handleLayoutNoteGroups } from '../../../../shared/graph';
 import type { Note } from '../../../../shared/types';
 
-const COLORS = ['#397960', '#5779a6', '#a76c44', '#8c6baa', '#ad6170', '#548b8c'];
+const COLORS = ['#0284c7', '#6366f1', '#b7791f', '#9470bd', '#c46685', '#319795'];
 const handleLabel = (name: string, length: number) => name.length > length ? name.slice(0, length) + '…' : name;
 
 export const GraphView = ({ notes, folders = [], selectedId, onSelect, onAddLink }: {
@@ -78,7 +78,7 @@ export const GraphView = ({ notes, folders = [], selectedId, onSelect, onAddLink
     <div className="folder-graph__layout"><div className="folder-graph__map-section">
       <div ref={map} className="folder-graph__map" aria-label="그래프 지도">
         {!items.length ? <div className="folder-graph__empty"><Folder size={30} /><strong>{keyword ? '검색 결과가 없습니다' : folder ? '아직 빈 폴더예요' : '폴더를 추가해 보세요'}</strong><p>{folder ? '메모를 이 폴더로 옮기면 여기에 나타납니다.' : '메모를 폴더로 묶어 생각을 탐색하세요.'}</p></div> : <svg viewBox={'0 0 ' + width + ' ' + height} style={{ width: zoom * 100 + '%', minWidth: zoom * 100 + '%' }} role="group" aria-label={noteView ? '메모 연결 지도' : '폴더 사이 연결 지도'}>
-          <defs><marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="#6c8e7b" /></marker></defs>
+          <defs><marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="#64748b" /></marker></defs>
           {noteView && layout.regions.map(region => <g key={region.name} className="folder-graph__region" data-folder={region.name}><rect x={region.x} y={region.y} width={region.width} height={region.height} rx="16" fill={handleColor(region.name) + '0c'} stroke={handleColor(region.name) + '50'} /><text x={region.x + 14} y={region.y + 24} fill={handleColor(region.name)}>{handleLabel(region.name, 18)} · {region.count}</text></g>)}
           {edges.map(edge => {
             const source = positions.get(edge.source); const target = positions.get(edge.target);

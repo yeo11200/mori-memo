@@ -1,5 +1,7 @@
 # MORI AI 스킬 개발계획서
 
+> 2026-09-09: 공용 로컬 CLI와 `mori-context` 스킬 0.1.0 구현. 검색·읽기·검토된 새 메모 생성 및 설치 방법은 [구현 기록](mori-context-skill.md)을 참고한다. 아래 계약은 최초 설계이며 실제 전송은 로컬 Python CLI, freshness는 코드 검증 전 unknown, 기존 메모 갱신·삭제는 후속 범위다.
+
 > Codex와 Claude가 현재 작업에 필요한 MORI 지식을 찾아 읽도록 만드는 별도 계획서다. MORI 앱의 사용자 기능과 Apple 메모 가져오기는 [MORI 앱 개발계획서](mori-app-development-plan.md)에서 다룬다.
 
 ## 목표

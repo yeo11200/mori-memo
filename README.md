@@ -7,6 +7,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [Apple 메모 연동 사용법·구현 기록 (0.4.0)](Docs/apple-notes-implementation.md)
 - [MORI 앱 개발계획서](Docs/mori-app-development-plan.md)
 - [Codex·Claude AI 스킬 개발계획서](Docs/mori-ai-skills-development-plan.md)
+- [MORI 연결 스킬 설치·사용법 (0.1.0)](Docs/mori-context-skill.md)
 - [무료 배포·마케팅·수익화 계획](Docs/marketing-revenue-plan.md)
 - [다음 개발 로드맵](Docs/next-roadmap.md)
 - [배포 계획](Docs/deployment-plan.md)
@@ -19,6 +20,16 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [구현 결정·제약 기록](implementation-notes.html)
 
 ## 실행
+
+**Codex·Claude 연결 스킬:** MORI 앱 DMG와 연결 스킬은 별도 배포물입니다. 저장소 루트의 `skills/mori-context`를 아래처럼 각 도구의 개인 스킬 폴더에 설치합니다. 설치 후 새 세션을 시작하면 `$mori-context`(Codex) 또는 `/mori-context`(Claude Code)로 사용할 수 있습니다.
+
+```sh
+mkdir -p ~/.agents/skills ~/.claude/skills
+cp -R skills/mori-context ~/.agents/skills/mori-context
+cp -R skills/mori-context ~/.claude/skills/mori-context
+```
+
+연결 스킬은 MORI 보관함을 로컬에서 검색·읽고, 코드 기반 문서 초안을 승인 후 새 메모로 저장합니다. 앱이 실행 중이지 않아도 되며, 현재 메모 수정·삭제와 임베딩 검색은 지원하지 않습니다. 자세한 계약과 MSA 흐름은 [MORI 연결 스킬 설치·사용법](Docs/mori-context-skill.md)을 참고하세요.
 
 **Apple 메모 연동:** 상단 **Apple 메모 연동** 또는 첫 메모 화면의 **Apple 메모 가져오기** → **목록 읽기** → 폴더/개별 메모 선택 → **가져오기**. 이후 **연동한 모든 항목**으로 새 메모와 변경을 반영합니다. Apple 원본은 읽기만 하며, MORI와 원본이 함께 수정된 경우 비교 후 선택합니다. 현재 본문은 일반 텍스트로 가져오고 사진·PDF·표·체크 상태는 보존하지 않습니다.
 
@@ -39,11 +50,13 @@ node scripts/graph-smoke.mjs
 npm run package:mac
 ```
 
-`release/mac-arm64/MORI.app`에 Apple Silicon용 로컬 앱이 생성됩니다. `npm run package:dmg`는 무료 공개 베타용 Apple Silicon DMG를 만듭니다. 현재 빌드는 Developer ID 서명·공증 전 단계이며 배포 채널과 설치 안내는 [배포 계획](Docs/deployment-plan.md)을 따릅니다.
+`release/mac-arm64/MORI.app`에 Apple Silicon용 로컬 앱이 생성됩니다. `npm run package:dmg`는 무료 공개 베타용 Apple Silicon DMG를 만듭니다. 현재 빌드는 Developer ID 서명·공증 전 단계이며 배포 채널과 설치 안내는 [배포 계획](Docs/deployment-plan.md)을 따릅니다. DMG에는 MORI 앱만 포함되며 Codex·Claude 연결 스킬은 별도로 설치합니다.
 
 **MORI 0.2.0:** 기본 **⌘⇧Space**로 백그라운드 빠른 메모 창을 열고 **⌘Enter**로 미분류에 저장합니다. 앱 창을 닫아도 메뉴 막대 M에서 대기합니다. 완전 종료 시 전역 단축키도 종료되며, 설정의 **로그인 시 MORI 자동 실행**을 켜면 다음 로그인부터 자동으로 실행됩니다. Escape로 숨긴 빠른 메모 초안은 앱을 완전히 종료하기 전에 저장하세요.
 
 ## 기능
+
+**0.4.2 미리보기 체크리스트:** Markdown 미리보기의 체크박스를 클릭하거나 키보드로 초점을 이동한 뒤 Space를 누르면 원문의 `- [ ]` / `- [x]`가 바뀌고 자동 저장됩니다. 중첩·번호·인용 목록도 지원하며 코드 블록의 예제는 변경하지 않습니다.
 
 **0.3.0 메모 연결 그래프:** 기본 화면의 점은 메모, 색 영역은 폴더, 화살표는 실제 문서 참조입니다. 메모를 선택하면 본문 미리보기·수정 날짜·들어오는/나가는 링크가 표시됩니다. 폴더 필터와 **연결된 메모만**으로 탐색 범위를 좁힐 수 있습니다. **폴더 요약**으로 전환하면 기존 집계 화면을 볼 수 있습니다.
 

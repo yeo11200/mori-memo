@@ -1,0 +1,4 @@
+interface:
+  display_name: "MORI 지식 연결"
+  short_description: "MORI 문서를 먼저 읽고 코드·기획에 적용하며 승인한 초안을 저장"
+  default_prompt: "Use $mori-context to consult my MORI knowledge before this task and propose missing documentation if needed."

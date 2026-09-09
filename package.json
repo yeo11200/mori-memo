@@ -1,6 +1,6 @@
 {
   "name": "personal-wiki",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "private": true,
   "description": "Local personal wiki for macOS",
   "type": "module",

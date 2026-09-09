@@ -46,7 +46,7 @@ const handleSendCommand = (command: string) => {
 
 const handleShowQuickNote = async () => {
   if (!quickWindow) {
-    quickWindow = new BrowserWindow({ width: 620, height: 350, title: 'MORI 빠른 메모', show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, backgroundColor: '#f7f6f2', webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
+    quickWindow = new BrowserWindow({ width: 620, height: 350, title: 'MORI 빠른 메모', show: false, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, backgroundColor: '#f8fafc', webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
     quickWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     quickWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     quickWindow.webContents.on('will-navigate', event => event.preventDefault());
@@ -273,7 +273,7 @@ const handleIPC = () => {
 };
 
 const handleCreateWindow = async () => {
-  window = new BrowserWindow({ width: 1360, height: 890, minWidth: 1000, minHeight: 640, title: 'MORI · 나의 지식정원', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 20 }, backgroundColor: '#f7f6f2', webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
+  window = new BrowserWindow({ width: 1360, height: 890, minWidth: 1000, minHeight: 640, title: 'MORI · 나의 지식정원', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 20 }, backgroundColor: '#f8fafc', webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('before-input-event', (event, input: Input) => {
     if (isShortcutRecording || input.type !== 'keyDown' || input.isAutoRepeat) return;
