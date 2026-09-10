@@ -51,6 +51,7 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleInstallMoriSkill(): Promise<{ installed: string[]; backup?: string }>;
   handleAppleState(): Promise<AppleImportState>;
   handleAppleScan(): Promise<AppleScan>;
   handleAppleSync(selection: AppleSelection): Promise<AppleImportState>;

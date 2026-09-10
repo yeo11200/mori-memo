@@ -21,7 +21,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 
 ## 실행
 
-**Codex·Claude 연결 스킬:** MORI 앱 DMG와 연결 스킬은 별도 배포물입니다. 저장소 루트의 `skills/mori-context`를 아래처럼 각 도구의 개인 스킬 폴더에 설치합니다. 설치 후 새 세션을 시작하면 `$mori-context`(Codex) 또는 `/mori-context`(Claude Code)로 사용할 수 있습니다.
+**Codex·Claude 연결 스킬:** MORI 앱 DMG에는 연결 스킬 원본도 포함되어 있습니다. 앱 설정의 **Codex·Claude 스킬 설치**를 누르면 각 도구의 개인 스킬 폴더에 설치합니다. 수동 설치가 필요하면 저장소 루트의 `skills/mori-context`를 아래처럼 복사합니다. 설치 후 새 세션을 시작하면 `$mori-context`(Codex) 또는 `/mori-context`(Claude Code)로 사용할 수 있습니다.
 
 ```sh
 mkdir -p ~/.agents/skills ~/.claude/skills

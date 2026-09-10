@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, safeStorage, shell, Tray, type IpcMainInvokeEvent, type Input } from 'electron';
-import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, rm, cp, rename, lstat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
@@ -42,6 +42,28 @@ const handleSettingsPath = () => join(vault.root, '.wiki/settings.json');
 const handleSendCommand = (command: string) => {
   if (command === 'quick-note') { void handleShowQuickNote().catch(error => dialog.showErrorBox('빠른 메모를 열지 못했습니다', String(error))); return; }
   window?.show(); window?.focus(); window?.webContents.send('wiki:command', command);
+};
+
+const handleInstallMoriSkill = async () => {
+  const source = app.isPackaged ? join(process.resourcesPath, 'skills/mori-context') : join(process.cwd(), 'skills/mori-context');
+  const targets = [join(app.getPath('home'), '.agents/skills/mori-context'), join(app.getPath('home'), '.claude/skills/mori-context')];
+  const backupRoot = join(app.getPath('home'), '.mori-skill-backups', new Date().toISOString().replace(/[:.]/g, '-'));
+  const installed: string[] = [];
+  let backup: string | undefined;
+  await lstat(source);
+  for (const target of targets) {
+    await mkdir(dirname(target), { recursive: true, mode: 0o700 });
+    try {
+      const existing = await lstat(target);
+      if (existing.isSymbolicLink()) throw new Error('기존 스킬 경로가 심볼릭 링크라 설치를 중단했습니다.');
+      await mkdir(backupRoot, { recursive: true, mode: 0o700 });
+      const backupPath = join(backupRoot, target.includes('.claude') ? 'claude' : 'codex');
+      await rename(target, backupPath); backup = backupRoot;
+    } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    await cp(source, target, { recursive: true, force: false });
+    installed.push(target);
+  }
+  return { installed, backup };
 };
 
 const handleShowQuickNote = async () => {
@@ -270,6 +292,7 @@ const handleIPC = () => {
     return `data:image/png;base64,${bytes.toString('base64')}`;
   });
   handleOn('close-ready', () => { isCloseApproved = true; if (isQuitting) app.quit(); else window?.close(); });
+  handleOn('install-mori-skill', handleInstallMoriSkill);
 };
 
 const handleCreateWindow = async () => {

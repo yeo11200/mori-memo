@@ -1,6 +1,6 @@
 {
   "name": "personal-wiki",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Local personal wiki for macOS",
   "type": "module",
@@ -23,6 +23,9 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      { "from": "skills/mori-context", "to": "skills/mori-context" }
     ],
     "mac": {
       "category": "public.app-category.productivity",

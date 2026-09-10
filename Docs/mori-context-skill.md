@@ -37,7 +37,7 @@ python3 skills/mori-context/scripts/mori.py --vault '/path/to/Vault' search --qu
 
 `--vault`는 하위 명령 앞에 둔다. 우선순위는 명시 경로 → MORI_VAULT_PATH → WIKI_DATA_DIR/Vault → macOS 기본 후보다. 기본 후보는 `~/Library/Application Support/personal-wiki/Vault`와 `~/Library/Application Support/MORI/Vault`다. 후보가 복수이면 임의로 고르지 않는다. status로 연결을 확인하고 다른 위치라면 명시 경로를 사용한다.
 
-Notes의 JSON frontmatter Markdown만 읽는다. 앱을 실행하지 않아도 되고 별도 서버·토큰·API 키가 없다. 출력은 JSON이며 실패 시 종료 코드 1, 인자 오류는 2다. 손상된 문서는 검색에서 건너뛰고 skippedDocuments 개수를 표시한다. 휴지통·첨부·Secrets·설정은 검색하지 않는다.
+Notes의 JSON frontmatter Markdown만 읽는다. 앱을 실행하지 않아도 되고 별도 서버·토큰·API 키가 없다. MORI 설정의 **Codex·Claude 스킬 설치** 버튼으로도 현재 DMG에 포함된 스킬을 두 개인 폴더에 설치할 수 있다. 출력은 JSON이며 실패 시 종료 코드 1, 인자 오류는 2다. 손상된 문서는 검색에서 건너뛰고 skippedDocuments 개수를 표시한다. 휴지통·첨부·Secrets·설정은 검색하지 않는다.
 
 - 검색: 제목 5, 폴더 2, 본문 1의 키워드 가중치. 결과 제한 1~20, 정확한 폴더 필터 `--scope` 지원.
 - 원문: ID로 읽으며 기본 6,000자, 최대 20,000자. nextOffset으로 이어 읽는다.

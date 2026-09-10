@@ -61,7 +61,7 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
   const handleBinding = (id: string, patch: Partial<ShortcutBinding>) => setDraft(current => ({ ...current, shortcuts: current.shortcuts?.map(item => item.id === id ? { ...item, ...patch } : item) }));
   return <div className="wiki__settings">
     <div className="wiki__panel__header"><h2>설정</h2><button aria-label="설정 닫기" className="wiki__icon-button" onClick={onClose}><X size={16} /></button></div>
-    <p className="wiki__settings__help">MORI 0.4.2 · 미리보기 체크리스트</p>
+    <p className="wiki__settings__help">MORI 0.4.3 · MORI 연결 스킬</p>
     <label>AI 연결 방식<select aria-label="AI 연결 방식" value={draft.provider} onChange={event => handleChangeProvider(event.target.value as AppSettings['provider'])}>
       <option value="codex">로컬 기반 · Codex CLI</option><option value="claude">로컬 기반 · Claude CLI</option><option value="openai">원격 API · OpenAI</option>
     </select></label>
@@ -77,6 +77,9 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
     </select></label>
     <p className="wiki__settings__help">모델의 사용 가능 여부는 계정에 따라 다릅니다. 연결 확인은 현재 저장된 설정을 사용합니다.</p>
     <button className="wiki__button" disabled={busy} onClick={async () => { setBusy(true); try { setStatus(await window.wiki.handleCheckAI()); } catch (cause) { setStatus(String(cause)); } finally { setBusy(false); } }}>저장된 AI 연결 확인</button>
+    <h3>MORI 연결 스킬</h3>
+    <p className="wiki__settings__help">Codex·Claude가 작업 전에 MORI 문서를 검색하고 읽도록 연결합니다. 기존 설치본은 백업 후 교체합니다.</p>
+    <button className="wiki__button" disabled={busy} onClick={async () => { setBusy(true); try { const result = await window.wiki.handleInstallMoriSkill(); setStatus(`Codex·Claude 스킬을 설치했습니다.${result.backup ? ' 기존 설치본은 백업했습니다.' : ''}`); } catch (cause) { setStatus(String(cause instanceof Error ? cause.message : cause)); } finally { setBusy(false); } }}>Codex·Claude 스킬 설치</button>
     <label>나만의 기본 AI 명령<textarea value={draft.customInstruction} onChange={event => setDraft({ ...draft, customInstruction: event.target.value })} /></label>
     <h3>백그라운드 빠른 메모</h3>
     <p className="wiki__settings__help">기본 ⌘⇧Space로 작은 메모 창을 열고 ⌘Enter로 저장합니다. 앱 창을 닫아도 메뉴 막대의 M에서 대기합니다. MORI를 완전히 종료하면 단축키도 종료됩니다.</p>

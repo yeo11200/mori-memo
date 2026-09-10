@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleInstallMoriSkill: () => ipcRenderer.invoke('wiki:install-mori-skill'),
   handleAppleState: () => ipcRenderer.invoke('wiki:apple-state'),
   handleAppleScan: () => ipcRenderer.invoke('wiki:apple-scan'),
   handleAppleSync: selection => ipcRenderer.invoke('wiki:apple-sync', selection),
