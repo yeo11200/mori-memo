@@ -9,10 +9,10 @@ export const FolderPanel = ({ folders, notes, selected, onSelect, onChange, busy
   const [edit, setEdit] = useState<{ action: 'create' | 'rename' | 'delete'; from: string } | null>(null);
   const [name, setName] = useState('');
   return <section className="wiki__folders">
-    <div className="wiki__quick"><span>폴더</span><button aria-label="폴더 추가" onClick={() => { setName(''); setEdit({ action: 'create', from: '' }); }}><Plus size={15} /></button></div>
+    <div className="wiki__quick"><span>폴더</span><button aria-label="폴더 추가" onClick={() => { setName(''); setEdit({ action: 'create', from: '' }); }}><Plus size={15} />추가</button></div>
     {folders.map(folder => <div className={`wiki__folder-row${selected === folder ? ' wiki__folder-row--active' : ''}`} key={folder}>
       <button className="wiki__folder-select" onClick={() => onSelect(folder)}><Folder size={14} /><span>{folder}</span><small>{notes.filter(note => note.folder === folder).length}</small></button>
-      <button aria-label={`${folder} 폴더 이름 변경`} onClick={() => { setName(folder); setEdit({ action: 'rename', from: folder }); }} disabled={busy || folder === '미분류'}><Pencil size={12} /></button>
+      <button aria-label={`${folder} 폴더 이름 변경`} onClick={() => { setName(folder); setEdit({ action: 'rename', from: folder }); }} disabled={busy || folder === '미분류'}><Pencil size={12} /><span className="sr-only">이름 변경</span></button>
       <button aria-label={`${folder} 폴더 삭제`} onClick={() => setEdit({ action: 'delete', from: folder })} disabled={busy || folder === '미분류'}><Trash2 size={12} /></button>
     </div>)}
     {edit && <form className="wiki__folder-form" onSubmit={async event => {

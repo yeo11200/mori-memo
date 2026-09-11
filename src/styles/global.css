@@ -244,3 +244,18 @@ body:has(.quick-note) { min-width:0; overflow:hidden; }
 .wiki__new-note:hover, .wiki__button--primary:hover, .quick-note footer button:hover { background: var(--mori-primary-hover); }
 .quick-note { color: var(--mori-text); }
 .folder-graph__map { background-image: radial-gradient(#cbd5e1 .75px, transparent .75px); }
+.wiki__topbar__tools, .wiki__editor__actions { flex-wrap: wrap; }
+.wiki__topbar__tools .wiki__icon-button, .wiki__editor__actions .wiki__icon-button { width: auto; height: auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px; font-size: 12px; white-space: nowrap; }
+.wiki__links-panel .wiki__panel__header { flex-wrap: wrap; gap: 12px; }
+.wiki__links-panel .wiki__panel__header .wiki__button { white-space: nowrap; }
+.wiki__link-section__description { margin: 8px 0; color: var(--mori-muted); font-size: 12px; line-height: 1.6; }
+.wiki__links-panel .wiki__ai-card button { width: auto; min-width: 55px; padding: 7px; height: auto; white-space: nowrap; }
+.wiki__connection-summary { padding: 16px; border: 1px solid var(--mori-border); border-radius: 12px; background: var(--mori-surface); }
+.wiki__connection-summary strong { color: var(--mori-text); font-size: 14px; }
+.wiki__connection-summary p { color: var(--mori-muted); font-size: 12px; line-height: 1.7; margin: 8px 0 14px; }
+.wiki__recommendation { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--mori-border); }
+.wiki__recommendation > .wiki__context-link { min-width: 0; flex: 1; margin: 0; }
+.wiki__recommendation > .wiki__button { flex-shrink: 0; padding: 7px 9px; font-size: 11px; }
+.wiki__guide { max-height: 65vh; overflow-y: auto; padding-right: 12px; color: var(--mori-text-secondary); font-size: 13px; line-height: 1.8; }
+.wiki__guide h3 { font-size: 14px; margin: 20px 0 5px; color: var(--mori-primary-dark); }
+.wiki__guide p { margin: 0 0 12px; }

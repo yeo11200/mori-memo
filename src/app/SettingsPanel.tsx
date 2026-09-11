@@ -33,15 +33,37 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
 }) => {
   const [draft, setDraft] = useState(settings);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [modelReload, setModelReload] = useState(0);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelStatus, setModelStatus] = useState('');
   const [key, setKey] = useState('');
   const [hasKey, setHasKey] = useState(Boolean(settings.apiKeyConfigured));
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [skillResult, setSkillResult] = useState<{ message: string; error?: boolean; backup?: string }>();
+  const skillFeedback = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (skillResult) skillFeedback.current?.scrollIntoView({ block: 'nearest' });
+  }, [skillResult]);
+  const handleInstallSkill = async () => {
+    setBusy(true); setInstalling(true); setSkillResult(undefined);
+    try {
+      const result = await window.wiki.handleInstallMoriSkill();
+      setSkillResult({ message: result.backup ? 'Codex·Claude 스킬을 설치했습니다. 기존 설치본은 백업했습니다.' : 'Codex·Claude 스킬을 처음 설치했습니다. 기존 설치본은 없어 백업하지 않았습니다.', backup: result.backup });
+    } catch (cause) {
+      const message = String(cause instanceof Error ? cause.message : cause).replace(/^(?:Error: )?Error invoking remote method '[^']+': Error: /, '');
+      setSkillResult({ message, error: true });
+    } finally { setBusy(false); setInstalling(false); }
+  };
   useEffect(() => {
     let active = true;
-    window.wiki.handleListModels(draft.provider).then(next => { if (active) setModels(next); }).catch(cause => { if (active) setStatus(String(cause)); });
+    setModelsLoading(true); setModels([]); setModelStatus('');
+    window.wiki.handleListModels(draft.provider).then(next => {
+      if (active) { setModels(next); setModelStatus(`${next.length}개 모델 선택지를 불러왔습니다.`); }
+    }).catch(cause => { if (active) setModelStatus(`목록을 불러오지 못했습니다: ${String(cause)}`); }).finally(() => { if (active) setModelsLoading(false); });
     return () => { active = false; };
-  }, [draft.provider]);
+  }, [draft.provider, modelReload]);
   const handleChangeProvider = (provider: AppSettings['provider']) => {
     setDraft(current => ({ ...current, provider, model: provider === 'codex' ? 'gpt-5.6-luna' : provider === 'openai' ? 'gpt-5-nano' : 'haiku' }));
     setStatus('');
@@ -61,7 +83,7 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
   const handleBinding = (id: string, patch: Partial<ShortcutBinding>) => setDraft(current => ({ ...current, shortcuts: current.shortcuts?.map(item => item.id === id ? { ...item, ...patch } : item) }));
   return <div className="wiki__settings">
     <div className="wiki__panel__header"><h2>설정</h2><button aria-label="설정 닫기" className="wiki__icon-button" onClick={onClose}><X size={16} /></button></div>
-    <p className="wiki__settings__help">MORI 0.4.3 · MORI 연결 스킬</p>
+    <p className="wiki__settings__help">MORI 0.5.1 · 모델 목록 업데이트</p>
     <label>AI 연결 방식<select aria-label="AI 연결 방식" value={draft.provider} onChange={event => handleChangeProvider(event.target.value as AppSettings['provider'])}>
       <option value="codex">로컬 기반 · Codex CLI</option><option value="claude">로컬 기반 · Claude CLI</option><option value="openai">원격 API · OpenAI</option>
     </select></label>
@@ -75,11 +97,18 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
       {!models.some(item => item.id === draft.model) && <option value={draft.model}>{draft.model || '기본 모델'} · 현재 설정</option>}
       {models.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
     </select></label>
-    <p className="wiki__settings__help">모델의 사용 가능 여부는 계정에 따라 다릅니다. 연결 확인은 현재 저장된 설정을 사용합니다.</p>
+    <button className="wiki__button" disabled={modelsLoading} onClick={() => setModelReload(value => value + 1)}>{modelsLoading ? '목록 불러오는 중…' : '모델 목록 새로고침'}</button>
+    <p role="status" className="wiki__settings__help">{modelStatus}</p>
+    <p className="wiki__settings__help">{draft.provider === 'codex' ? 'Codex가 저장한 모델 목록을 읽습니다. 새 모델이 없으면 Codex CLI를 실행한 뒤 새로고침하세요. 캐시가 없으면 기본 목록을 표시합니다.' : draft.provider === 'claude' ? 'Haiku·Sonnet·Opus·Fable은 CLI가 제공자별 권장 버전으로 연결하는 별칭입니다. 모델 접근 권한은 계정과 CLI 버전에 따라 다릅니다. Fable은 추가 크레딧이 사용될 수 있습니다.' : 'OpenAI API 모델 선택지입니다.'} 모델 변경 후 설정을 저장하세요. 연결 확인은 저장된 설정을 사용합니다.</p>
     <button className="wiki__button" disabled={busy} onClick={async () => { setBusy(true); try { setStatus(await window.wiki.handleCheckAI()); } catch (cause) { setStatus(String(cause)); } finally { setBusy(false); } }}>저장된 AI 연결 확인</button>
     <h3>MORI 연결 스킬</h3>
     <p className="wiki__settings__help">Codex·Claude가 작업 전에 MORI 문서를 검색하고 읽도록 연결합니다. 기존 설치본은 백업 후 교체합니다.</p>
-    <button className="wiki__button" disabled={busy} onClick={async () => { setBusy(true); try { const result = await window.wiki.handleInstallMoriSkill(); setStatus(`Codex·Claude 스킬을 설치했습니다.${result.backup ? ' 기존 설치본은 백업했습니다.' : ''}`); } catch (cause) { setStatus(String(cause instanceof Error ? cause.message : cause)); } finally { setBusy(false); } }}>Codex·Claude 스킬 설치</button>
+    <button className="wiki__button" disabled={busy} aria-busy={installing} onClick={() => void handleInstallSkill()}>{installing ? '스킬 설치 중…' : 'Codex·Claude 스킬 설치'}</button>
+    {skillResult && <div ref={skillFeedback} role={skillResult.error ? 'alert' : 'status'} className="wiki__settings__help" style={{ overflowWrap: 'anywhere' }}>
+      <p>{skillResult.message}</p>
+      {!skillResult.error && <p>Codex·Claude에서 새 세션을 열고 “mori-context로 MORI 문서를 찾아줘”라고 요청하세요.</p>}
+      {skillResult.backup && <p>기존 설치본 백업: {skillResult.backup}</p>}
+    </div>}
     <label>나만의 기본 AI 명령<textarea value={draft.customInstruction} onChange={event => setDraft({ ...draft, customInstruction: event.target.value })} /></label>
     <h3>백그라운드 빠른 메모</h3>
     <p className="wiki__settings__help">기본 ⌘⇧Space로 작은 메모 창을 열고 ⌘Enter로 저장합니다. 앱 창을 닫아도 메뉴 막대의 M에서 대기합니다. MORI를 완전히 종료하면 단축키도 종료됩니다.</p>

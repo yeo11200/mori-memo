@@ -4,11 +4,11 @@ import { handleParseLinks, handleResolveLink } from '../../shared/links';
 import { handleNotePreview } from '../../shared/note-preview';
 import type { Note } from '../../shared/types';
 
-export const LinkDialog = ({ source, notes, onAdd, onClose }: {
-  source: Note; notes: Note[]; onAdd: (targetId: string, reason: string) => Promise<void>; onClose: () => void;
+export const LinkDialog = ({ source, notes, initialTargetId = '', onAdd, onClose }: {
+  source: Note; notes: Note[]; initialTargetId?: string; onAdd: (targetId: string, reason: string) => Promise<void>; onClose: () => void;
 }) => {
   const [query, setQuery] = useState('');
-  const [targetId, setTargetId] = useState('');
+  const [targetId, setTargetId] = useState(initialTargetId);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

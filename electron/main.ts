@@ -10,6 +10,7 @@ import { Vault } from './vault/vault';
 import { AppleImportService } from './apple-notes/import-service';
 import { handleReadAppleNotes } from './apple-notes/source';
 import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
+import { MODEL_CATALOGS, handleReadCodexModels } from './cli/model-catalog';
 import { OpenAIRunner } from './openai/openai-runner';
 import { APIKeyStore } from './openai/api-key-store';
 import { handleInputAccelerator, handleMigrateShortcuts, handleValidateShortcuts } from './shortcuts';
@@ -124,11 +125,6 @@ const handleValidateCustomCommands = (commands: CustomCommand[]): CustomCommand[
   });
 };
 
-const MODEL_CATALOGS: Record<AppSettings['provider'], AIModel[]> = {
-  codex: [{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna (기본)' }],
-  claude: [{ id: '', label: 'Claude CLI 기본 모델' }],
-  openai: [{ id: 'gpt-5-nano', label: 'GPT-5 nano (기본)' }, { id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }]
-};
 
 const handleCapture = async () => {
   if (isCapturing) throw new Error('이미 화면을 캡처하고 있습니다.');
@@ -233,9 +229,10 @@ const handleIPC = () => {
   handleOn('ai', handleRunAI);
   handleOn('cancel-ai', () => { runner.handleCancel(); openAIRunner.handleCancel(); });
   handleOn('set-api-key', async (key: string) => { await apiKeyStore.handleSet(key); settings.apiKeyConfigured = (await apiKeyStore.handleStatus()).configured; });
-  handleOn('list-models', (provider?: AppSettings['provider']) => {
+  handleOn('list-models', async (provider?: AppSettings['provider']) => {
     const selected = provider || settings.provider;
     if (!MODEL_CATALOGS[selected]) throw new Error('AI 제공자를 확인해 주세요.');
+    if (selected === 'codex') return handleReadCodexModels(join(process.env.CODEX_HOME || join(app.getPath('home'), '.codex'), 'models_cache.json'));
     return MODEL_CATALOGS[selected].map(model => ({ ...model }));
   });
   handleOn('check-ai', async () => {
