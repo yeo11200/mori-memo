@@ -37,6 +37,7 @@ const handleValidateFolder = (name: string) => {
   if (!value || value.length > 80 || /[\\/:*?"<>|\0\r\n]/.test(value) || value === '.' || value === '..') throw new Error('폴더 이름을 확인해 주세요.');
   return value;
 };
+const handleAppleFolder = (folder: string) => handleValidateFolder(folder.replace(/[\\/:*?"<>|]/g, ' › ').replace(/\s+›\s+/g, ' › ').trim().slice(0, 80) || DEFAULT_FOLDER);
 
 /** Markdown 원문을 저장하고 버전 충돌과 삭제 복구를 관리합니다. */
 export class Vault {
@@ -224,7 +225,8 @@ export class Vault {
       const content = choice === 'keep' ? note! : choice === 'merge' ? { title: note!.title, body: mergedBody! } : source;
       if (typeof content.body !== 'string') throw new Error('병합할 내용을 입력해 주세요.');
       const provenance: AppleProvenance = { sourceId: source.id, sourceTitle: source.title, sourceFolder: source.folder, importedAt: note?.appleSource?.importedAt || now, lastSeenAt: now, sourceHash: handleContentHash(source), importedHash: choice === 'keep' || choice === 'merge' ? note!.appleSource!.importedHash : handleContentHash(content), warnings: source.warnings };
-      const saved = note ? await this.handleSaveNow({ ...note, title: content.title, body: content.body }, provenance) : await this.handleCreateNow(content.title, content.body, 'Apple 메모', provenance);
+      // 처음 가져올 때만 Apple 원본 폴더를 사용합니다. 이후 MORI에서 이동한 폴더는 동기화로 되돌리지 않습니다.
+      const saved = note ? await this.handleSaveNow({ ...note, title: content.title, body: content.body }, provenance) : await this.handleCreateNow(content.title, content.body, handleAppleFolder(source.folder), provenance);
       return { ...base, noteId: saved.id, status: note ? 'updated' : 'created' };
     });
   }

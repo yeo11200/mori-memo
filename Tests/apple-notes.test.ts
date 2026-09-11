@@ -23,12 +23,14 @@ it('imports once, preserves ID/history, and synchronizes future notes in selecte
   await service.handleSync({ mode: 'selected', folderIds: ['folder-1'], noteIds: [] });
   const first = (await vault.handleList())[0];
   expect(first.appleSource?.sourceId).toBe('apple-1');
+  expect(first.folder).toBe('iCloud › 업무');
   expect(first.body).toBe('원문');
   catalog.notes[0].body = 'Apple 수정';
   catalog.notes.push({ ...source, id: 'apple-2', title: '신규' });
   await service.handleScan(); await service.handleSync({ mode: 'all', folderIds: [], noteIds: [] });
   expect(await vault.handleList()).toHaveLength(2);
   expect((await vault.handleGet(first.id)).body).toBe('Apple 수정');
+  expect((await vault.handleGet(first.id)).folder).toBe('iCloud › 업무');
   expect((await vault.handleHistory(first.id)).some(note => note.body === '원문')).toBe(true);
   await service.handleSync({ mode: 'all', folderIds: [], noteIds: [] });
   expect(await vault.handleList()).toHaveLength(2);

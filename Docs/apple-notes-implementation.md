@@ -13,7 +13,7 @@
 ## 구현과 데이터 보호
 
 - 설치된 `/System/Applications/Notes.app/Contents/Resources/Notes.sdef`의 계정·폴더·메모 ID·plaintext·password protected·attachment 속성을 JXA로 읽는다.
-- Apple 원본을 생성·수정·삭제하는 명령은 없다. 가져온 메모는 MORI의 `Apple 메모` 폴더에 저장한다. 이후 MORI에서 폴더를 이동해도 재동기화 시 유지한다.
+- Apple 원본을 생성·수정·삭제하는 명령은 없다. 처음 가져온 메모는 Apple의 계정·하위 폴더 경로를 MORI 폴더로 사용한다. 파일 경로에 사용할 수 없는 문자는 `›`로 표시한다(예: `iCloud / 업무` → `iCloud › 업무`). 이후 MORI에서 폴더를 이동하면 다음 동기화에서도 사용자의 MORI 폴더 위치를 유지한다.
 - 원본 ID와 출처·콘텐츠 해시를 Markdown 메타데이터에 함께 저장해 반복 실행 중복을 방지한다. 제목이 같은 원본도 ID로 구분한다.
 - 원본이 변경되고 MORI 본문은 그대로면 기존 ID의 새 버전으로 저장한다. 백링크와 버전 기록을 유지한다.
 - MORI만 수정됐으면 내용을 유지한다. 양쪽이 변경됐을 때 검토 보관함에서 MORI 유지·Apple 반영·직접 편집을 선택한다. 검토 대상은 마지막으로 읽은 원본 스냅샷이다.
