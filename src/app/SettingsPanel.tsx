@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import type { AppSettings, ShortcutBinding } from '../../shared/types';
+import { CalendarSettings } from './CalendarSettings';
 
 export const commandLabels: Record<string, string> = {
   capture: '화면 캡처', 'quick-note': '빠른 메모', new: '새 메모', search: '검색창',
@@ -28,8 +29,8 @@ const ShortcutRecorder = ({ value, onChange, label }: { value: string; onChange:
     }} />;
 };
 
-export const SettingsPanel = ({ settings, onSave, onClose }: {
-  settings: AppSettings; onSave: (next: AppSettings) => Promise<void>; onClose: () => void;
+export const SettingsPanel = ({ settings, onSave, onClose, onCalendarSync }: {
+  settings: AppSettings; onSave: (next: AppSettings) => Promise<void>; onClose: () => void; onCalendarSync: () => Promise<void>;
 }) => {
   const [draft, setDraft] = useState(settings);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
@@ -83,7 +84,8 @@ export const SettingsPanel = ({ settings, onSave, onClose }: {
   const handleBinding = (id: string, patch: Partial<ShortcutBinding>) => setDraft(current => ({ ...current, shortcuts: current.shortcuts?.map(item => item.id === id ? { ...item, ...patch } : item) }));
   return <div className="wiki__settings">
     <div className="wiki__panel__header"><h2>설정</h2><button aria-label="설정 닫기" className="wiki__icon-button" onClick={onClose}><X size={16} /></button></div>
-    <p className="wiki__settings__help">MORI 0.5.2 · Apple 폴더 매핑</p>
+    <p className="wiki__settings__help">MORI 0.7.0 · Google Calendar 데일리 연동</p>
+    <CalendarSettings onSync={onCalendarSync} />
     <label>AI 연결 방식<select aria-label="AI 연결 방식" value={draft.provider} onChange={event => handleChangeProvider(event.target.value as AppSettings['provider'])}>
       <option value="codex">로컬 기반 · Codex CLI</option><option value="claude">로컬 기반 · Claude CLI</option><option value="openai">원격 API · OpenAI</option>
     </select></label>

@@ -12,6 +12,7 @@ export interface Note {
   appleSource?: AppleProvenance;
   dailyDate?: string;
   dailyTaskKeys?: string[];
+  calendarSnapshots?: import('./calendar').CalendarSnapshot[];
 }
 
 export interface AppSettings {
@@ -53,6 +54,15 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleCalendarState(): Promise<import('./calendar').CalendarState>;
+  handleCalendarImportClient(): Promise<import('./calendar').CalendarState>;
+  handleCalendarConnect(): Promise<import('./calendar').CalendarState>;
+  handleCalendarCancel(): Promise<void>;
+  handleCalendarRefresh(): Promise<import('./calendar').CalendarState>;
+  handleCalendarSelect(ids: string[], autoSync: boolean): Promise<import('./calendar').CalendarState>;
+  handleCalendarDisconnect(): Promise<import('./calendar').CalendarState>;
+  handleCalendarSync(automatic?: boolean): Promise<Note | null>;
+  handleOpenCalendarEvent(url: string): Promise<void>;
   handleInstallMoriSkill(): Promise<{ installed: string[]; backup?: string }>;
   handleAppleState(): Promise<AppleImportState>;
   handleAppleScan(): Promise<AppleScan>;

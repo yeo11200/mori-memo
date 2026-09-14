@@ -32,11 +32,11 @@ export const MarkdownView = ({ body, onLink, onEdit, disabled = false }: { body:
       a: ({ href, children }) => href?.startsWith('wiki:') ? <button className="wiki__inline__link" onClick={() => {
         const [target, heading] = href.slice(5).split('#');
         try { onLink(decodeURIComponent(target), heading ? decodeURIComponent(heading) : undefined); } catch { /* 잘못된 링크는 탐색하지 않습니다. */ }
-      }}>{children}</button> : <span className="wiki__external__link" title={href}>{children}</span>,
+      }}>{children}</button> : href && /^https:\/\/(www\.google\.com\/calendar\/|calendar\.google\.com\/)/.test(href) ? <button className="wiki__inline__link" title="Google Calendar에서 열기" onClick={() => void window.wiki.handleOpenCalendarEvent(href).catch(() => undefined)}>{children} ↗</button> : <span className="wiki__external__link" title={href}>{children}</span>,
       img: ({ src, alt }) => src?.startsWith('Attachments/') ? <Attachment source={src} label={alt || '이미지'} /> : <span>외부 이미지: {alt || src}</span>,
       h1: ({ children }) => <h1 id={String(children)}>{children}</h1>,
       h2: ({ children }) => <h2 id={String(children)}>{children}</h2>,
       h3: ({ children }) => <h3 id={String(children)}>{children}</h3>
-    }}>{handlePreviewMarkdown(body.replace(/ <!-- mori-task:[a-f0-9]{64} -->/g, ''))}</ReactMarkdown>
+    }}>{handlePreviewMarkdown(body.replace(/ <!-- mori-task:[a-f0-9]{64} -->/g, '').replace(/<!-- mori-calendar:[a-f0-9]{64}:(start|end) -->/g, ''))}</ReactMarkdown>
   </div></TaskEditContext.Provider>
 );

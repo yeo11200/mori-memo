@@ -2,6 +2,15 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleCalendarState: () => ipcRenderer.invoke('wiki:calendar-state'),
+  handleCalendarImportClient: () => ipcRenderer.invoke('wiki:calendar-import-client'),
+  handleCalendarConnect: () => ipcRenderer.invoke('wiki:calendar-connect'),
+  handleCalendarCancel: () => ipcRenderer.invoke('wiki:calendar-cancel'),
+  handleCalendarRefresh: () => ipcRenderer.invoke('wiki:calendar-refresh'),
+  handleCalendarSelect: (ids, autoSync) => ipcRenderer.invoke('wiki:calendar-select', ids, autoSync),
+  handleCalendarDisconnect: () => ipcRenderer.invoke('wiki:calendar-disconnect'),
+  handleCalendarSync: automatic => ipcRenderer.invoke('wiki:calendar-sync', automatic),
+  handleOpenCalendarEvent: url => ipcRenderer.invoke('wiki:calendar-open-event', url),
   handleInstallMoriSkill: () => ipcRenderer.invoke('wiki:install-mori-skill'),
   handleAppleState: () => ipcRenderer.invoke('wiki:apple-state'),
   handleAppleScan: () => ipcRenderer.invoke('wiki:apple-scan'),

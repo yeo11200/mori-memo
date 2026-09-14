@@ -91,14 +91,36 @@ export const useWiki = () => {
 
   const handleCreate = async (template = 'blank', folder?: string) => {
     if (mutatingRef.current) return;
+    mutatingRef.current = true; setMutating(true);
     try {
       await handleFlush();
       while (dirtyRef.current) await handleFlush();
       let note = await window.wiki.handleCreateNote(template);
+      if (template === 'daily') {
+        try { note = await window.wiki.handleCalendarSync(true) || note; }
+        catch (cause) { handleReportError(cause); }
+      }
       if (template !== 'daily' && folder && folder !== note.folder) note = await window.wiki.handleSaveNote({ ...note, folder });
       handleSetNotes([note, ...notesRef.current.filter(item => item.id !== note.id)]); handleSetDraft(note); setSaveStatus('저장됨');
       setFolders(await window.wiki.handleListFolders());
     } catch (cause) { handleReportError(cause); }
+    finally { mutatingRef.current = false; setMutating(false); }
+  };
+
+  const handleCalendarSync = async () => {
+    if (mutatingRef.current || busyRef.current) throw new Error('진행 중인 작업을 마친 뒤 일정을 가져와 주세요.');
+    mutatingRef.current = true; setMutating(true);
+    try {
+      await handleFlush();
+      while (dirtyRef.current) await handleFlush();
+      const note = await window.wiki.handleCalendarSync();
+      if (note) {
+        handleSetNotes([note, ...notesRef.current.filter(item => item.id !== note.id)]);
+        handleSetDraft(note); dirtyRef.current = false; setSaveStatus('저장됨');
+        setFolders(await window.wiki.handleListFolders());
+        setNotice('Google 일정을 오늘 데일리에 반영했습니다.');
+      }
+    } finally { mutatingRef.current = false; setMutating(false); }
   };
 
   const handleDailyTransfer = async (input: DailyTransfer) => {
@@ -281,7 +303,7 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
-  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleDailyTransfer, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
+  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleDailyTransfer, handleCalendarSync, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
     handleEdit, handleFlush, handleSelect, handleCreate, handleDelete, handleAI, handleApplyResult, handleCapture, handleImport, handleRestore, handleExample,
     handleReportError, handleReloadNotes, handleClearError: () => setError(''), handleClearNotice: () => setNotice(''), handleSetSettings: setSettings,
     handleCancelAI: () => window.wiki.handleCancelAI(),

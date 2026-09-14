@@ -13,6 +13,8 @@ import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
 import { MODEL_CATALOGS, handleReadCodexModels } from './cli/model-catalog';
 import { OpenAIRunner } from './openai/openai-runner';
 import { APIKeyStore } from './openai/api-key-store';
+import { GoogleCalendarService } from './calendar/google-calendar';
+import { CalendarSecureStore } from './calendar/secure-store';
 import { handleInputAccelerator, handleMigrateShortcuts, handleValidateShortcuts } from './shortcuts';
 import { handleRelatedNotes, handleParseLinks, handleResolveLink } from '../shared/links';
 import type { AIAction, AIModel, AIResult, AppSettings, CustomCommand, Note, ShortcutBinding } from '../shared/types';
@@ -29,6 +31,7 @@ let vault: Vault;
 let appleImports: AppleImportService;
 let settings: AppSettings;
 let apiKeyStore: APIKeyStore;
+let googleCalendar: GoogleCalendarService;
 let isCapturing = false;
 let isCloseApproved = false;
 let isAIWorking = false;
@@ -196,6 +199,24 @@ const handleIPC = () => {
   });
   ipcMain.handle('wiki:quick-hide', event => { handleValidateQuickSender(event); if (!quickSaving) quickWindow?.hide(); });
   const handleOn = (channel: string, fn: (...args: any[]) => unknown) => ipcMain.handle(`wiki:${channel}`, (event, ...args) => { handleValidateSender(event); return fn(...args); });
+  handleOn('calendar-state', () => googleCalendar.handleState());
+  handleOn('calendar-import-client', async () => {
+    const result = await dialog.showOpenDialog({ title: 'Google OAuth 데스크톱 앱 JSON 선택', properties: ['openFile'], filters: [{ name: 'Google OAuth JSON', extensions: ['json'] }] });
+    if (result.canceled || !result.filePaths[0]) return googleCalendar.handleState();
+    if ((await lstat(result.filePaths[0])).size > 64_000) throw new Error('64KB 이하의 OAuth JSON 파일을 선택해 주세요.');
+    return googleCalendar.handleImportClient(await readFile(result.filePaths[0], 'utf8'));
+  });
+  handleOn('calendar-connect', () => googleCalendar.handleConnect());
+  handleOn('calendar-cancel', () => googleCalendar.handleCancel());
+  handleOn('calendar-refresh', () => googleCalendar.handleRefreshCalendars());
+  handleOn('calendar-select', (ids, autoSync) => googleCalendar.handleSelect(ids, autoSync));
+  handleOn('calendar-disconnect', () => googleCalendar.handleDisconnect());
+  handleOn('calendar-sync', (automatic) => googleCalendar.handleSync(batch => vault.handleCalendarApply(batch), automatic === true));
+  handleOn('calendar-open-event', async (value: string) => {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password || !(url.hostname === 'calendar.google.com' || (url.hostname === 'www.google.com' && url.pathname.startsWith('/calendar/')))) throw new Error('Google Calendar 일정 링크만 열 수 있습니다.');
+    await shell.openExternal(url.href);
+  });
   appleImports = new AppleImportService(vault, handleReadAppleNotes);
   handleOn('apple-state', () => appleImports.handleState());
   handleOn('apple-scan', () => appleImports.handleScan());
@@ -320,6 +341,7 @@ else {
     const userData = process.env.WIKI_DATA_DIR || app.getPath('userData');
     vault = new Vault(join(userData, 'Vault'));
     apiKeyStore = new APIKeyStore(join(userData, 'Secrets', 'openai-api-key.bin'), safeStorage);
+    googleCalendar = new GoogleCalendarService(new CalendarSecureStore(join(userData, 'Secrets', 'google-calendar.bin'), safeStorage), url => shell.openExternal(url));
     await vault.handleInitialize();
     settings = handleValidateSettings(handleDefaults());
     try { settings = handleValidateSettings(JSON.parse(await readFile(handleSettingsPath(), 'utf8'))); }
