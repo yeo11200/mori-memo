@@ -6,7 +6,11 @@
 
 빌드와 링크 검증: `node site/build.mjs`. 공개 파일만 `site/dist`에 복사하며 문서와 호스팅 설정은 공개 파일에 포함하지 않습니다.
 
-Sites 프로젝트 식별자는 `.openai/hosting.json`에 보관합니다. 현재 공개 범위와 배포 성공 여부는 Sites에서 별도로 확인해야 합니다. 소스를 수정하는 것만으로 재배포되지는 않습니다.
+GitHub Pages 배포 주소: https://yeo11200.github.io/mori-memo/
+
+`main`의 `site/` 변경을 푸시하면 `.github/workflows/site-pages.yml`에서 검증·빌드 후 `site/dist`만 자동 배포합니다. GitHub Actions에서 수동 실행도 가능합니다. 배포 결과는 저장소의 Actions에서 확인하세요. DMG는 사이트에 포함하지 않고 Google Drive로 연결합니다.
+
+`.openai/hosting.json`은 이전 Sites 미리보기 프로젝트 정보이며 GitHub Pages 배포에는 사용하지 않습니다.
 
 로컬 확인:
 
