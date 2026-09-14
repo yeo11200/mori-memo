@@ -37,6 +37,6 @@ export const MarkdownView = ({ body, onLink, onEdit, disabled = false }: { body:
       h1: ({ children }) => <h1 id={String(children)}>{children}</h1>,
       h2: ({ children }) => <h2 id={String(children)}>{children}</h2>,
       h3: ({ children }) => <h3 id={String(children)}>{children}</h3>
-    }}>{handlePreviewMarkdown(body)}</ReactMarkdown>
+    }}>{handlePreviewMarkdown(body.replace(/ <!-- mori-task:[a-f0-9]{64} -->/g, ''))}</ReactMarkdown>
   </div></TaskEditContext.Provider>
 );

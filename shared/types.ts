@@ -10,6 +10,8 @@ export interface Note {
   revision: string;
   aliases?: string[];
   appleSource?: AppleProvenance;
+  dailyDate?: string;
+  dailyTaskKeys?: string[];
 }
 
 export interface AppSettings {
@@ -61,6 +63,7 @@ export interface WikiAPI {
   handleBootstrap(): Promise<Bootstrap>;
   handleCreateNote(template: string): Promise<Note>;
   handleSaveNote(note: Note): Promise<Note>;
+  handleDailyTransfer(input: import('./daily').DailyTransfer): Promise<import('./daily').DailyResult>;
   handleAddLink(sourceId: string, targetId: string, revision: string, reason: string): Promise<Note>;
   handleTrashNote(id: string): Promise<void>;
   handleListTrash(): Promise<Note[]>;

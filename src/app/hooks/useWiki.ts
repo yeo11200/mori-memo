@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AIAction, AIResult, AppSettings, Note } from '../../../shared/types';
+import type { DailyTransfer } from '../../../shared/daily';
 
 const handleErrorText = (error: unknown) => String(error instanceof Error ? error.message : error).replace(/^Error invoking remote method '[^']+': Error: /, '');
 
@@ -94,10 +95,25 @@ export const useWiki = () => {
       await handleFlush();
       while (dirtyRef.current) await handleFlush();
       let note = await window.wiki.handleCreateNote(template);
-      if (folder && folder !== note.folder) note = await window.wiki.handleSaveNote({ ...note, folder });
-      handleSetNotes([note, ...notesRef.current]); handleSetDraft(note); setSaveStatus('저장됨');
+      if (template !== 'daily' && folder && folder !== note.folder) note = await window.wiki.handleSaveNote({ ...note, folder });
+      handleSetNotes([note, ...notesRef.current.filter(item => item.id !== note.id)]); handleSetDraft(note); setSaveStatus('저장됨');
       setFolders(await window.wiki.handleListFolders());
     } catch (cause) { handleReportError(cause); }
+  };
+
+  const handleDailyTransfer = async (input: DailyTransfer) => {
+    if (mutatingRef.current || busyRef.current) throw new Error('진행 중인 작업을 마친 뒤 추가해 주세요.');
+    mutatingRef.current = true; setMutating(true);
+    try {
+      await handleFlush();
+      while (dirtyRef.current) await handleFlush();
+      const result = await window.wiki.handleDailyTransfer(input);
+      handleSetNotes([result.note, ...notesRef.current.filter(note => note.id !== result.note.id)]);
+      handleSetDraft(result.note); dirtyRef.current = false; setSaveStatus('저장됨');
+      setFolders(await window.wiki.handleListFolders());
+      setNotice(result.added ? `오늘 데일리에 ${result.added}개를 추가했습니다.${result.skipped ? ` 중복 ${result.skipped}개는 건너뛰었습니다.` : ''}` : '이미 오늘 데일리에 추가한 할 일입니다.');
+      return result;
+    } finally { mutatingRef.current = false; setMutating(false); }
   };
 
   const handleDelete = async () => {
@@ -265,7 +281,7 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
-  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
+  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleDailyTransfer, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
     handleEdit, handleFlush, handleSelect, handleCreate, handleDelete, handleAI, handleApplyResult, handleCapture, handleImport, handleRestore, handleExample,
     handleReportError, handleReloadNotes, handleClearError: () => setError(''), handleClearNotice: () => setNotice(''), handleSetSettings: setSettings,
     handleCancelAI: () => window.wiki.handleCancelAI(),

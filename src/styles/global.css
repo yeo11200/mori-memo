@@ -259,3 +259,16 @@ body:has(.quick-note) { min-width:0; overflow:hidden; }
 .wiki__guide { max-height: 65vh; overflow-y: auto; padding-right: 12px; color: var(--mori-text-secondary); font-size: 13px; line-height: 1.8; }
 .wiki__guide h3 { font-size: 14px; margin: 20px 0 5px; color: var(--mori-primary-dark); }
 .wiki__guide p { margin: 0 0 12px; }
+/* 데일리 작업 모음 */
+.daily-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; background: #edf8ff; border-bottom: 1px solid #cde5f3; flex-shrink: 0; }
+.daily-bar > span { color: #37556b; font-size: 13px; }
+.daily-dialog { max-width: 650px; }
+.daily-dialog > p { color: #536c81; line-height: 1.6; }
+.daily-dialog__field { display: grid; gap: 8px; margin: 16px 0; color: #37556b; font-size: 14px; }
+.daily-dialog__field input { padding: 12px; border: 1px solid #c8d9e7; border-radius: 8px; background: white; color: #162b40; }
+.daily-dialog__list { max-height: 320px; overflow-y: auto; border-block: 1px solid #deebf2; }
+.daily-dialog__task { display: flex; align-items: flex-start; gap: 12px; padding: 14px 4px; cursor: pointer; border-bottom: 1px solid #edf2f6; }
+.daily-dialog__task input { margin-top: 4px; accent-color: #087eae; }
+.daily-dialog__task strong { font-weight: 500; overflow-wrap: anywhere; }
+.daily-dialog__task small { display: block; margin-top: 6px; color: #5b748a; }
+.daily-dialog__hint { font-size: 13px; }

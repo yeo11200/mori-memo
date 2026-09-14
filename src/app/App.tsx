@@ -5,6 +5,8 @@ import { FolderPanel } from './FolderPanel';
 import { NoteEditor } from './NoteEditor';
 import { CommandPalette } from './CommandPalette';
 import { LinkDialog } from './LinkDialog';
+import { DailyDialog } from './DailyDialog';
+import { handleDailyDate, handleLocalDate } from '../../shared/daily';
 import { AppleNotesDialog } from '../components/features/apple-notes';
 import { useWiki } from './hooks/useWiki';
 import { MarkdownView } from '../components/features/markdown-view';
@@ -21,6 +23,7 @@ export const App = () => {
   const [selectedFolder, setSelectedFolder] = useState('');
   const [showPalette, setShowPalette] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [dailyMode, setDailyMode] = useState<'send' | 'carry' | null>(null);
   const [suggestedTargetId, setSuggestedTargetId] = useState('');
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [pinnedOnly, setPinnedOnly] = useState(false);
@@ -76,6 +79,10 @@ export const App = () => {
     if (note) void wiki.handleSelect(note.id); else wiki.handleReportError(`연결된 메모를 찾을 수 없습니다: ${target}`);
   };
   const handleSaveSettings = async (next: AppSettings) => { wiki.handleSetSettings(await window.wiki.handleSaveSettings(next)); setPanel('links'); };
+  const handleOpenDailyTasks = async (mode: 'send' | 'carry') => {
+    try { await wiki.handleFlush(); setDailyMode(mode); }
+    catch (cause) { wiki.handleReportError(cause); }
+  };
 
   if (wiki.isLoading) return <div className="wiki__loading"><MoriLogo /> 나만의 지식정원을 준비하는 중…</div>;
   return <div className="wiki">
@@ -91,6 +98,7 @@ export const App = () => {
         <div className="wiki__quick"><span>내 보관함</span><button onClick={() => setPanel('graph')}><Network size={14} />지식 그래프</button></div>
         <nav className="wiki__nav"><button className={`wiki__nav__item${!pinnedOnly ? ' wiki__nav__item--active' : ''}`} onClick={() => { setPinnedOnly(false); setQuery(''); setSelectedFolder(''); }}><Menu size={15} />모든 메모 <span>{wiki.notes.length}</span></button><button className={`wiki__nav__item${pinnedOnly ? ' wiki__nav__item--active' : ''}`} onClick={() => setPinnedOnly(true)}><Pin size={15} />고정한 메모 <span>{wiki.notes.filter(note => note.pinned).length}</span></button><button className="wiki__nav__item" onClick={() => void handleOpenTrash()}><Trash2 size={15} />휴지통</button></nav>
         <FolderPanel folders={wiki.folders} notes={wiki.notes} selected={selectedFolder} busy={wiki.isMutating} onSelect={folder => { setSelectedFolder(folder); setQuery(''); setPinnedOnly(false); }} onChange={async (action, from, to) => { const ok = await wiki.handleFolderChange(action, from, to); if (ok && selectedFolder === from) setSelectedFolder(action === 'delete' ? '미분류' : to || from); return ok; }} />
+        <button className="wiki__button" disabled={wiki.isMutating} onClick={() => { setQuery(''); setSelectedFolder(''); setPinnedOnly(false); void wiki.handleCreate('daily'); }}>오늘 데일리 열기</button>
         <button className="wiki__button" onClick={() => setShowGuide(true)}>사용 가이드</button>
         <button className="wiki__button wiki__palette-launch" onClick={() => handleCommand('palette')}>명령 팔레트</button>
         <label className="wiki__section-title">{selectedFolder || '최근 메모'} <span>{handleShortcutLabel('search')} 검색</span></label>
@@ -98,6 +106,7 @@ export const App = () => {
         <button className="wiki__example" onClick={() => void wiki.handleExample()}><Sparkles size={14} />예제 보관함 추가</button>
       </aside>
       <section className="wiki__editor">
+        {wiki.draft && <div className="daily-bar"><span>{handleDailyDate(wiki.draft) ? `${handleDailyDate(wiki.draft)} · 데일리 기록` : '이 메모에서 오늘 할 일 모으기'}</span>{handleDailyDate(wiki.draft) === handleLocalDate() ? <button className="wiki__button" disabled={wiki.isMutating || !!wiki.aiAction} onClick={() => void handleOpenDailyTasks('carry')}>미완료 할 일 가져오기</button> : <button className="wiki__button" disabled={wiki.isMutating || !!wiki.aiAction} onClick={() => void handleOpenDailyTasks('send')}>오늘 할 일로 보내기</button>}</div>}
         {wiki.draft?.appleSource && <div className="apple-source" aria-label="Apple 메모 출처"><strong>Apple 메모에서 가져옴 · {wiki.draft.appleSource.sourceTitle}</strong><span>{wiki.draft.appleSource.sourceFolder} · 마지막 확인 {new Date(wiki.draft.appleSource.lastSeenAt).toLocaleString('ko-KR')}</span>{wiki.draft.appleSource.warnings.map(warning => <small key={warning}>{warning}</small>)}</div>}
         {wiki.draft ? <><div className="wiki__editor__toolbar"><span className="wiki__crumb">{wiki.draft.folder} <span>/</span> {wiki.draft.title}</span><div className="wiki__editor__actions"><span className="wiki__save-state">{wiki.saveStatus}</span><button className="wiki__icon-button" title="화면 캡처" onClick={() => void wiki.handleCapture()}><Camera size={16} />화면 캡처</button><button className="wiki__icon-button wiki__danger" title="휴지통으로 이동" onClick={() => void wiki.handleDelete()}><Trash2 size={16} />삭제</button><button className="wiki__icon-button" title={wiki.draft.pinned ? '고정 해제' : '메모 고정'} onClick={() => wiki.handleEdit({ pinned: !wiki.draft!.pinned })}><Pin size={17} />{wiki.draft.pinned ? '고정 해제' : '고정'}</button></div></div><div className="wiki__writing-tools"><select aria-label="메모 폴더" disabled={wiki.isMutating} value={wiki.draft.folder} onChange={event => wiki.handleEdit({ folder: event.target.value })}>{[...new Set([...wiki.folders, wiki.draft.folder])].map(folder => <option key={folder} value={folder}>{folder}</option>)}</select><button className="wiki__button wiki__button--primary" onClick={() => { setShowAI(true); void wiki.handleAI('summary'); }} disabled={!!wiki.aiAction}><Sparkles size={15} />요약하기</button><button className="wiki__button" onClick={() => setShowAI(true)}><Wand2 size={15} />AI로 작성·정리</button><button className="wiki__button" disabled={wiki.isMutating} onClick={() => setLinkSourceId(wiki.draft!.id)}><Link2 size={15} />메모 연결</button><button className="wiki__button" onClick={() => setPreview(!preview)}>{preview ? '편집하기' : '미리보기'}</button></div><input disabled={wiki.isMutating} aria-label="메모 제목" className="wiki__title-input" value={wiki.draft.title} onChange={event => wiki.handleEdit({ title: event.target.value })} placeholder="제목 없는 메모" />{preview ? <MarkdownView body={wiki.draft.body} onLink={handleOpenLink} disabled={wiki.isMutating} onEdit={body => wiki.handleEdit({ body })} /> : <NoteEditor key={wiki.draft.id} note={wiki.draft} notes={wiki.notes} disabled={wiki.isMutating} onEdit={body => wiki.handleEdit({ body })} />}<div className="wiki__editor__footer"><span>Markdown 지원 · [[문서]]로 연결</span><span><kbd>⌘ S</kbd> 저장</span></div></> : <div className="wiki__empty-editor"><Sparkles size={26} /><h2>첫 메모를 시작해 보세요</h2><p>당신의 생각이 연결된 지식이 됩니다.</p><button onClick={() => setShowAppleNotes(true)}><FolderOpen size={16} />Apple 메모 가져오기</button><button onClick={() => setShowCreate(true)}><Plus size={16} /> 새 메모 만들기</button><button onClick={() => setShowAI(true)}><Wand2 size={16} />AI로 초안 작성</button></div>}
       </section>
@@ -106,6 +115,7 @@ export const App = () => {
       </aside>
     </main>
     {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
+    {dailyMode && wiki.draft && <DailyDialog source={wiki.draft} notes={wiki.notes} carry={dailyMode === 'carry'} onAdd={wiki.handleDailyTransfer} onClose={() => setDailyMode(null)} />}
     {showAppleNotes && <AppleNotesDialog notes={wiki.notes} onOperation={wiki.handleAppleOperation} onClose={() => setShowAppleNotes(false)} />}
     {linkSource && <LinkDialog initialTargetId={suggestedTargetId} source={linkSource} notes={wiki.notes} onAdd={(targetId, reason) => wiki.handleAddLink(linkSource.id, targetId, reason)} onClose={() => { setLinkSourceId(null); setSuggestedTargetId(''); }} />}
     {showPalette && wiki.settings && <CommandPalette settings={wiki.settings} onClose={() => setShowPalette(false)} onCommand={handleCommand} />}

@@ -4,6 +4,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import type { Note } from '../../shared/types';
 import { handleAppendLink } from '../../shared/link-edit';
+import { handleAppendDailyTasks, handleDailyDate, handleDailyTasks, handleLocalDate } from '../../shared/daily';
+import type { DailyTransfer, DailyResult } from '../../shared/daily';
 import type { AppleNote, AppleProvenance, AppleResult } from '../../shared/apple-notes';
 import { handleContentHash, handleImportStatus } from '../apple-notes/compare';
 
@@ -23,7 +25,7 @@ const handleDeserialize = (text: string): Note => {
   const meta = JSON.parse(match[1]);
   handleValidateId(meta.id);
   if (typeof meta.title !== 'string' || typeof meta.revision !== 'string' || typeof meta.folder !== 'string') throw new Error('문서 정보가 올바르지 않습니다.');
-  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, appleSource: meta.appleSource, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
+  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, appleSource: meta.appleSource, dailyDate: typeof meta.dailyDate === 'string' ? meta.dailyDate : undefined, dailyTaskKeys: Array.isArray(meta.dailyTaskKeys) ? meta.dailyTaskKeys.filter((key: unknown) => typeof key === 'string') : undefined, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
 };
 const handleAtomicWrite = async (path: string, text: string) => {
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -150,17 +152,77 @@ export class Vault {
     return this.handleQueue(() => this.handleCreateNow(title, body, folder));
   }
 
-  private async handleCreateNow(title: string, body: string, folder: string, appleSource?: AppleProvenance): Promise<Note> {
+  private async handleCreateNow(title: string, body: string, folder: string, appleSource?: AppleProvenance, dailyDate?: string): Promise<Note> {
       if (body.length > MAX_BODY) throw new Error('메모는 2MB 이하로 작성해 주세요.');
       const now = new Date().toISOString();
       const normalizedFolder = handleValidateFolder(folder || DEFAULT_FOLDER);
-      const note: Note = { id: randomUUID(), title: title.trim().slice(0, 160) || '제목 없는 메모', body, folder: normalizedFolder, pinned: false, createdAt: now, updatedAt: now, revision: randomUUID(), aliases: [], appleSource };
+      const note: Note = { id: randomUUID(), title: title.trim().slice(0, 160) || '제목 없는 메모', body, folder: normalizedFolder, pinned: false, createdAt: now, updatedAt: now, revision: randomUUID(), aliases: [], appleSource, dailyDate };
       const text = handleSerialize(note);
       await handleAtomicWrite(join(this.root, 'Notes', `${note.id}.md`), text);
       this.fingerprints.set(note.id, handleHash(text));
       const folders = await this.handleReadFolders();
       if (!folders.includes(normalizedFolder)) await this.handleWriteFolders([...folders, normalizedFolder]);
       return note;
+  }
+
+
+  handleTodayDaily(): Promise<Note> {
+    return this.handleQueue(() => this.handleDailyNow(handleLocalDate()));
+  }
+
+  private async handleDailyNow(date: string): Promise<Note> {
+    const matches = (await this.handleList()).filter(note => handleDailyDate(note) === date);
+    if (matches.length > 1) throw new Error('오늘 데일리가 여러 개입니다. 남길 노트 하나를 정하고 나머지는 제목을 변경하거나 휴지통으로 옮겨 주세요.');
+    if (matches[0]) return matches[0].dailyDate ? matches[0] : this.handleSaveNow(matches[0], undefined, { dailyDate: date });
+    if ((await this.handleListTrash()).some(note => handleDailyDate(note) === date)) throw new Error('오늘 데일리가 휴지통에 있습니다. 복원한 뒤 다시 열어 주세요.');
+    return this.handleCreateNow(date + ' 데일리 노트', '## 오늘 일정\n\n## 오늘 할 일\n\n## 오늘의 기록\n\n', '데일리', undefined, date);
+  }
+
+  handleDailyTransfer(input: DailyTransfer): Promise<DailyResult> {
+    return this.handleQueue(async () => {
+      if (!input || !Array.isArray(input.tasks) || input.tasks.length > 100 || (!input.tasks.length && !input.custom)) throw new Error('가져올 할 일을 1~100개 선택해 주세요.');
+      const items: { key: string; text: string; source: Note }[] = [];
+      const sources = new Map<string, Note>();
+      const handleSource = async (id: string, revision: string) => {
+        const source = sources.get(id) || await this.handleGet(id);
+        sources.set(id, source);
+        const text = await readFile(join(this.root, 'Notes', source.id + '.md'), 'utf8');
+        if (source.revision !== revision || this.fingerprints.get(id) !== handleHash(text)) throw new Error('원본 메모가 변경되었습니다. 창을 닫고 다시 선택해 주세요.');
+        return source;
+      };
+      for (const selection of input.tasks) {
+        if (!selection || !Number.isInteger(selection.line)) throw new Error('할 일 선택이 올바르지 않습니다.');
+        const source = await handleSource(selection.noteId, selection.revision);
+        const candidates = handleDailyTasks(source.body);
+        const task = candidates.find(item => item.line === selection.line);
+        if (!task) throw new Error('선택한 할 일이 완료되었거나 변경되었습니다. 다시 선택해 주세요.');
+        const occurrence = handleDailyTasks(source.body, true).filter(item => item.text === task.text && item.line <= task.line).length;
+        const key = task.originKey || handleHash(JSON.stringify([source.id, task.text, occurrence]));
+        items.push({ key, text: task.text, source });
+      }
+      if (input.custom) {
+        const { noteId, revision, text } = input.custom;
+        if (typeof text !== 'string' || !text.trim() || text.length > 500 || /[\r\n]/.test(text)) throw new Error('할 일은 한 줄, 500자 이내로 작성해 주세요.');
+        const source = await handleSource(noteId, revision);
+        items.push({ key: handleHash(JSON.stringify([source.id, text.trim(), 'custom'])), text: text.trim(), source });
+      }
+      const date = handleLocalDate();
+      if (items.some(item => handleDailyDate(item.source) === date)) throw new Error('오늘 데일리의 할 일은 이미 오늘에 포함되어 있습니다.');
+      const daily = await this.handleDailyNow(date);
+      const keys = new Set(daily.dailyTaskKeys || []);
+      for (const marker of daily.body.matchAll(/<!-- mori-task:([a-f0-9]{64}) -->/g)) keys.add(marker[1]);
+      const additions: string[] = [];
+      for (const item of items) {
+        if (keys.has(item.key)) continue;
+        keys.add(item.key);
+        const label = item.source.title.replace(/[\[\]|\r\n]/g, '').trim() || '원본 메모';
+        additions.push('- [ ] ' + item.text + ' — [[' + item.source.id + '|' + label + ']] <!-- mori-task:' + item.key + ' -->');
+      }
+      if (!additions.length) return { note: daily, added: 0, skipped: items.length };
+      const body = handleAppendDailyTasks(daily.body, additions);
+      const note = await this.handleSaveNow({ ...daily, body }, undefined, { dailyDate: date, dailyTaskKeys: [...keys] });
+      return { note, added: additions.length, skipped: items.length - additions.length };
+    });
   }
 
   handleSave(input: Note): Promise<Note> {
@@ -176,7 +238,7 @@ export class Vault {
     });
   }
 
-  private async handleSaveNow(input: Note, appleSource?: AppleProvenance): Promise<Note> {
+  private async handleSaveNow(input: Note, appleSource?: AppleProvenance, dailyMeta?: Pick<Note, 'dailyDate' | 'dailyTaskKeys'>): Promise<Note> {
       const id = handleValidateId(input.id);
       if (typeof input.body !== 'string' || input.body.length > MAX_BODY || typeof input.title !== 'string' || typeof input.folder !== 'string') throw new Error('메모 내용이 올바르지 않습니다.');
       const path = join(this.root, 'Notes', `${id}.md`);
@@ -186,13 +248,13 @@ export class Vault {
       const title = input.title.trim().slice(0, 160) || '제목 없는 메모';
       const knownFolders = await this.handleReadFolders();
       const folder = knownFolders.includes(input.folder) ? input.folder : handleValidateFolder(input.folder || DEFAULT_FOLDER);
-      if (!appleSource && title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
+      if (!appleSource && !dailyMeta && title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
       const aliases = new Set(previous.aliases || []);
       if (title !== previous.title || folder !== previous.folder) {
         aliases.add(previous.title);
         aliases.add(`${previous.folder}/${previous.title}`);
       }
-      const note: Note = { ...previous, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], appleSource: appleSource || previous.appleSource, updatedAt: new Date().toISOString(), revision: randomUUID() };
+      const note: Note = { ...previous, dailyDate: handleDailyDate(previous), ...dailyMeta, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], appleSource: appleSource || previous.appleSource, updatedAt: new Date().toISOString(), revision: randomUUID() };
       const historyDir = join(this.root, '.wiki/history', id);
       await mkdir(historyDir, { recursive: true });
       if (title !== previous.title || folder !== previous.folder || input.body !== previous.body || input.pinned !== previous.pinned) await writeFile(join(historyDir, `${previous.revision}.md`), source, { mode: 0o600 });

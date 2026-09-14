@@ -206,6 +206,7 @@ const handleIPC = () => {
     return { notes: await vault.handleList(), settings: { ...settings, apiKeyConfigured: keyStatus.configured }, vaultPath: vault.root, warnings: [...startupWarnings, ...vault.warnings, ...(keyStatus.warning ? [keyStatus.warning] : [])] };
   });
   handleOn('create', async (template: string) => {
+    if (template === 'daily') return vault.handleTodayDaily();
     const date = new Date().toLocaleDateString('sv-SE');
     const templates: Record<string, [string, string, string]> = {
       blank: ['제목 없는 메모', '', '미분류'],
@@ -216,6 +217,7 @@ const handleIPC = () => {
     return vault.handleCreate(title, body, folder);
   });
   handleOn('save', (note: Note) => vault.handleSave(note));
+  handleOn('daily-transfer', input => vault.handleDailyTransfer(input));
   handleOn('add-link', (sourceId: string, targetId: string, revision: string, reason: string) => vault.handleAddLink(sourceId, targetId, revision, reason));
   handleOn('trash', (id: string) => vault.handleTrash(id));
   handleOn('list-trash', () => vault.handleListTrash());
