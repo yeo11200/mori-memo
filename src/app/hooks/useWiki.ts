@@ -1,3 +1,4 @@
+import { WORK_PROVIDERS, type WorkProvider } from '../../../shared/work';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AIAction, AIResult, AppSettings, Note } from '../../../shared/types';
 import type { DailyTransfer } from '../../../shared/daily';
@@ -99,6 +100,10 @@ export const useWiki = () => {
       if (template === 'daily') {
         try { note = await window.wiki.handleCalendarSync(true) || note; }
         catch (cause) { handleReportError(cause); }
+        for (const provider of WORK_PROVIDERS) {
+          try { note = await window.wiki.handleWorkSync(provider, true) || note; }
+          catch (cause) { handleReportError(cause); }
+        }
       }
       if (template !== 'daily' && folder && folder !== note.folder) note = await window.wiki.handleSaveNote({ ...note, folder });
       handleSetNotes([note, ...notesRef.current.filter(item => item.id !== note.id)]); handleSetDraft(note); setSaveStatus('저장됨');
@@ -119,6 +124,22 @@ export const useWiki = () => {
         handleSetDraft(note); dirtyRef.current = false; setSaveStatus('저장됨');
         setFolders(await window.wiki.handleListFolders());
         setNotice('Google 일정을 오늘 데일리에 반영했습니다.');
+      }
+    } finally { mutatingRef.current = false; setMutating(false); }
+  };
+
+  const handleWorkSync = async (provider: WorkProvider) => {
+    if (mutatingRef.current || busyRef.current) throw new Error('진행 중인 작업을 마친 뒤 업무를 가져와 주세요.');
+    mutatingRef.current = true; setMutating(true);
+    try {
+      await handleFlush();
+      while (dirtyRef.current) await handleFlush();
+      const note = await window.wiki.handleWorkSync(provider);
+      if (note) {
+        handleSetNotes([note, ...notesRef.current.filter(item => item.id !== note.id)]);
+        handleSetDraft(note); dirtyRef.current = false; setSaveStatus('저장됨');
+        setFolders(await window.wiki.handleListFolders());
+        setNotice('담당 업무를 오늘 데일리에 반영했습니다.');
       }
     } finally { mutatingRef.current = false; setMutating(false); }
   };
@@ -303,7 +324,7 @@ export const useWiki = () => {
     } catch (cause) { handleReportError(cause); }
   };
 
-  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleDailyTransfer, handleCalendarSync, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
+  return { notes, folders, isMutating, handleFolderChange, handleAddLink, handleDailyTransfer, handleWorkSync, handleCalendarSync, handleAppleOperation, draft, settings, vaultPath, isLoading, saveStatus, error, notice, aiResult, aiAction, appliedResult, handleClose,
     handleEdit, handleFlush, handleSelect, handleCreate, handleDelete, handleAI, handleApplyResult, handleCapture, handleImport, handleRestore, handleExample,
     handleReportError, handleReloadNotes, handleClearError: () => setError(''), handleClearNotice: () => setNotice(''), handleSetSettings: setSettings,
     handleCancelAI: () => window.wiki.handleCancelAI(),

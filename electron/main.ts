@@ -13,6 +13,8 @@ import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
 import { MODEL_CATALOGS, handleReadCodexModels } from './cli/model-catalog';
 import { OpenAIRunner } from './openai/openai-runner';
 import { APIKeyStore } from './openai/api-key-store';
+import { WorkService } from './work/work-service';
+import { handleWorkLink } from '../shared/work-link';
 import { GoogleCalendarService } from './calendar/google-calendar';
 import { CalendarSecureStore } from './calendar/secure-store';
 import { handleInputAccelerator, handleMigrateShortcuts, handleValidateShortcuts } from './shortcuts';
@@ -31,6 +33,7 @@ let vault: Vault;
 let appleImports: AppleImportService;
 let settings: AppSettings;
 let apiKeyStore: APIKeyStore;
+let workService: WorkService;
 let googleCalendar: GoogleCalendarService;
 let isCapturing = false;
 let isCloseApproved = false;
@@ -199,6 +202,16 @@ const handleIPC = () => {
   });
   ipcMain.handle('wiki:quick-hide', event => { handleValidateQuickSender(event); if (!quickSaving) quickWindow?.hide(); });
   const handleOn = (channel: string, fn: (...args: any[]) => unknown) => ipcMain.handle(`wiki:${channel}`, (event, ...args) => { handleValidateSender(event); return fn(...args); });
+  handleOn('work-state', provider => workService.handleState(provider));
+  handleOn('work-connect', input => workService.handleConnect(input));
+  handleOn('work-select', (provider, selection) => workService.handleSelect(provider, selection));
+  handleOn('work-refresh', provider => workService.handleRefresh(provider));
+  handleOn('work-disconnect', provider => workService.handleDisconnect(provider));
+  handleOn('work-sync', (provider, automatic) => workService.handleSync(provider, batch => vault.handleWorkApply(batch), automatic === true));
+  handleOn('work-open-item', async (url: string) => {
+    if (typeof url !== 'string' || !handleWorkLink(url)) throw new Error('지원하는 업무 원본 링크만 열 수 있습니다.');
+    await shell.openExternal(url);
+  });
   handleOn('calendar-state', () => googleCalendar.handleState());
   handleOn('calendar-import-client', async () => {
     const result = await dialog.showOpenDialog({ title: 'Google OAuth 데스크톱 앱 JSON 선택', properties: ['openFile'], filters: [{ name: 'Google OAuth JSON', extensions: ['json'] }] });
@@ -341,6 +354,7 @@ else {
     const userData = process.env.WIKI_DATA_DIR || app.getPath('userData');
     vault = new Vault(join(userData, 'Vault'));
     apiKeyStore = new APIKeyStore(join(userData, 'Secrets', 'openai-api-key.bin'), safeStorage);
+    workService = new WorkService(new CalendarSecureStore(join(userData, 'Secrets', 'work-connections.bin'), safeStorage));
     googleCalendar = new GoogleCalendarService(new CalendarSecureStore(join(userData, 'Secrets', 'google-calendar.bin'), safeStorage), url => shell.openExternal(url));
     await vault.handleInitialize();
     settings = handleValidateSettings(handleDefaults());

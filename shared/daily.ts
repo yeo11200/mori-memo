@@ -42,6 +42,7 @@ export const handleDailyDate = (note: Note): string | undefined =>
 export const handleDailyTasks = (body: string, includeCompleted = false): DailyTask[] => {
   let fence = '';
   const tasks: DailyTask[] = [];
+  let workBlock = false;
   body.split('\n').forEach((line, index) => {
     const delimiter = line.match(/^ {0,3}(`{3,}|~{3,})/);
     if (delimiter) {
@@ -50,6 +51,9 @@ export const handleDailyTasks = (body: string, includeCompleted = false): DailyT
       return;
     }
     if (fence) return;
+    if (/^<!-- mori-work:[a-f0-9]{64}:start -->$/.test(line)) { workBlock = true; return; }
+    if (/^<!-- mori-work:[a-f0-9]{64}:end -->$/.test(line)) { workBlock = false; return; }
+    if (workBlock) return;
     const match = line.match(/^ {0,3}(?:[-+*]|\d+[.)])\s+\[([ xX])\]\s+(.+?)\s*$/);
     if (!match) return;
     if (!includeCompleted && match[1] !== ' ') return;

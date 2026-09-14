@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import type { AppSettings, ShortcutBinding } from '../../shared/types';
+import { WorkSettings } from './WorkSettings';
+import type { WorkProvider } from '../../shared/work';
 import { CalendarSettings } from './CalendarSettings';
 
 export const commandLabels: Record<string, string> = {
@@ -29,8 +31,8 @@ const ShortcutRecorder = ({ value, onChange, label }: { value: string; onChange:
     }} />;
 };
 
-export const SettingsPanel = ({ settings, onSave, onClose, onCalendarSync }: {
-  settings: AppSettings; onSave: (next: AppSettings) => Promise<void>; onClose: () => void; onCalendarSync: () => Promise<void>;
+export const SettingsPanel = ({ settings, onSave, onClose, onCalendarSync, onWorkSync }: {
+  settings: AppSettings; onSave: (next: AppSettings) => Promise<void>; onClose: () => void; onCalendarSync: () => Promise<void>; onWorkSync: (provider: WorkProvider) => Promise<void>;
 }) => {
   const [draft, setDraft] = useState(settings);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
@@ -84,7 +86,8 @@ export const SettingsPanel = ({ settings, onSave, onClose, onCalendarSync }: {
   const handleBinding = (id: string, patch: Partial<ShortcutBinding>) => setDraft(current => ({ ...current, shortcuts: current.shortcuts?.map(item => item.id === id ? { ...item, ...patch } : item) }));
   return <div className="wiki__settings">
     <div className="wiki__panel__header"><h2>설정</h2><button aria-label="설정 닫기" className="wiki__icon-button" onClick={onClose}><X size={16} /></button></div>
-    <p className="wiki__settings__help">MORI 0.7.0 · Google Calendar 데일리 연동</p>
+    <p className="wiki__settings__help">MORI 0.8.0 · 일정과 담당 업무를 데일리로</p>
+    <WorkSettings onSync={onWorkSync} />
     <CalendarSettings onSync={onCalendarSync} />
     <label>AI 연결 방식<select aria-label="AI 연결 방식" value={draft.provider} onChange={event => handleChangeProvider(event.target.value as AppSettings['provider'])}>
       <option value="codex">로컬 기반 · Codex CLI</option><option value="claude">로컬 기반 · Claude CLI</option><option value="openai">원격 API · OpenAI</option>

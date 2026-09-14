@@ -12,6 +12,7 @@ export interface Note {
   appleSource?: AppleProvenance;
   dailyDate?: string;
   dailyTaskKeys?: string[];
+  workSnapshots?: import('./work').WorkSnapshot[];
   calendarSnapshots?: import('./calendar').CalendarSnapshot[];
 }
 
@@ -54,6 +55,13 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleWorkState(provider: import('./work').WorkProvider): Promise<import('./work').WorkState>;
+  handleWorkConnect(input: import('./work').WorkCredentials): Promise<import('./work').WorkState>;
+  handleWorkSelect(provider: import('./work').WorkProvider, selection: import('./work').WorkSelection): Promise<import('./work').WorkState>;
+  handleWorkRefresh(provider: import('./work').WorkProvider): Promise<import('./work').WorkState>;
+  handleWorkDisconnect(provider: import('./work').WorkProvider): Promise<import('./work').WorkState>;
+  handleWorkSync(provider: import('./work').WorkProvider, automatic?: boolean): Promise<Note | null>;
+  handleOpenWorkItem(url: string): Promise<void>;
   handleCalendarState(): Promise<import('./calendar').CalendarState>;
   handleCalendarImportClient(): Promise<import('./calendar').CalendarState>;
   handleCalendarConnect(): Promise<import('./calendar').CalendarState>;

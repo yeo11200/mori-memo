@@ -1,5 +1,7 @@
 export const handleNotePreview = (body: string, limit = 240) => body
   .replace(/ <!-- mori-task:[a-f0-9]{64} -->/g, '')
+  .replace(/<!-- mori-work:[a-f0-9]{64}:(start|end) -->/g, '')
+  .replace(/ <!-- mori-work-item:[a-zA-Z0-9-]+ -->/g, '')
   .replace(/<!-- mori-calendar:[a-f0-9]{64}:(start|end) -->/g, '')
   .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, target: string, label?: string) => label || target)
   .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')

@@ -4,6 +4,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 
 ## 계획서와 개발 기록
 
+- [Jira·GitHub·GitLab 담당 업무 연동 (0.8.0)](Docs/work-connections.md)
 - [Apple 메모 연동 사용법·구현 기록 (0.4.0)](Docs/apple-notes-implementation.md)
 - [MORI 앱 개발계획서](Docs/mori-app-development-plan.md)
 - [Codex·Claude AI 스킬 개발계획서](Docs/mori-ai-skills-development-plan.md)
@@ -60,7 +61,9 @@ npm run package:mac
 
 **데일리 할 일 모음:** 왼쪽 **오늘 데일리 열기**는 같은 날짜의 노트를 재사용합니다. 다른 메모에서 **오늘 할 일로 보내기**를 눌러 미완료 체크리스트를 선택하거나 할 일을 직접 입력하세요. 원본 링크와 함께 추가되며 중복은 건너뜁니다. 오늘 데일리의 **미완료 할 일 가져오기**로 지난 데일리 항목을 선택해 이월할 수 있습니다. 원본 메모와 완료 상태는 변경하지 않습니다.
 
-**0.7.0 Google Calendar 연동:** 설정에서 OAuth 데스크톱 JSON 선택 → Google 로그인 → 캘린더 선택 → 오늘 일정 가져오기를 사용합니다. 데일리를 열 때 자동 갱신할 수도 있습니다. [최초 연결과 동작 안내](Docs/google-calendar-setup.md)를 참고하세요. 실제 계정 로그인 검증은 별도로 필요합니다. Jira·GitHub·GitLab 연동은 [후속 계획](Docs/daily-hub-plan.md)입니다.
+**0.7.0 Google Calendar 연동:** 설정에서 OAuth 데스크톱 JSON 선택 → Google 로그인 → 캘린더 선택 → 오늘 일정 가져오기를 사용합니다. 데일리를 열 때 자동 갱신할 수도 있습니다. [최초 연결과 동작 안내](Docs/google-calendar-setup.md)를 참고하세요. 실제 계정 로그인 검증은 별도로 필요합니다.
+
+**0.8.0 담당 업무 연동:** 설정의 **담당 업무 → 오늘 데일리**에서 Jira Cloud·GitHub.com·GitLab.com 계정을 연결합니다. 프로젝트 및 미완료/전체 필터를 선택해 내 담당 이슈를 가져오고, 오늘 데일리를 열 때 갱신할 수 있습니다. MORI에서 체크해도 원본 상태는 바뀌지 않습니다. [토큰 준비·사용법·검증 범위](Docs/work-connections.md)를 참고하세요. 실제 사용자 계정 검증은 별도로 필요합니다.
 
 **0.4.2 미리보기 체크리스트:** Markdown 미리보기의 체크박스를 클릭하거나 키보드로 초점을 이동한 뒤 Space를 누르면 원문의 `- [ ]` / `- [x]`가 바뀌고 자동 저장됩니다. 중첩·번호·인용 목록도 지원하며 코드 블록의 예제는 변경하지 않습니다.
 

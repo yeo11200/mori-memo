@@ -2,6 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleWorkState: provider => ipcRenderer.invoke('wiki:work-state', provider),
+  handleWorkConnect: input => ipcRenderer.invoke('wiki:work-connect', input),
+  handleWorkSelect: (provider, selection) => ipcRenderer.invoke('wiki:work-select', provider, selection),
+  handleWorkRefresh: provider => ipcRenderer.invoke('wiki:work-refresh', provider),
+  handleWorkDisconnect: provider => ipcRenderer.invoke('wiki:work-disconnect', provider),
+  handleWorkSync: (provider, automatic) => ipcRenderer.invoke('wiki:work-sync', provider, automatic),
+  handleOpenWorkItem: url => ipcRenderer.invoke('wiki:work-open-item', url),
   handleCalendarState: () => ipcRenderer.invoke('wiki:calendar-state'),
   handleCalendarImportClient: () => ipcRenderer.invoke('wiki:calendar-import-client'),
   handleCalendarConnect: () => ipcRenderer.invoke('wiki:calendar-connect'),

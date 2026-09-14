@@ -6,6 +6,8 @@ import type { Note } from '../../shared/types';
 import { handleAppendLink } from '../../shared/link-edit';
 import { handleAppendDailyTasks, handleDailyDate, handleDailyTasks, handleLocalDate } from '../../shared/daily';
 import type { DailyTransfer, DailyResult } from '../../shared/daily';
+import { handleWorkMerge } from '../../shared/work-merge';
+import type { WorkBatch, WorkSnapshot } from '../../shared/work';
 import { handleCalendarMerge } from '../../shared/calendar-merge';
 import type { CalendarBatch, CalendarSnapshot } from '../../shared/calendar';
 import type { AppleNote, AppleProvenance, AppleResult } from '../../shared/apple-notes';
@@ -27,7 +29,7 @@ const handleDeserialize = (text: string): Note => {
   const meta = JSON.parse(match[1]);
   handleValidateId(meta.id);
   if (typeof meta.title !== 'string' || typeof meta.revision !== 'string' || typeof meta.folder !== 'string') throw new Error('문서 정보가 올바르지 않습니다.');
-  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, appleSource: meta.appleSource, dailyDate: typeof meta.dailyDate === 'string' ? meta.dailyDate : undefined, dailyTaskKeys: Array.isArray(meta.dailyTaskKeys) ? meta.dailyTaskKeys.filter((key: unknown) => typeof key === 'string') : undefined, calendarSnapshots: Array.isArray(meta.calendarSnapshots) ? meta.calendarSnapshots : undefined, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
+  return { id: meta.id, title: meta.title, body: match[2], folder: meta.folder, pinned: !!meta.pinned, createdAt: meta.createdAt, updatedAt: meta.updatedAt, revision: meta.revision, appleSource: meta.appleSource, dailyDate: typeof meta.dailyDate === 'string' ? meta.dailyDate : undefined, dailyTaskKeys: Array.isArray(meta.dailyTaskKeys) ? meta.dailyTaskKeys.filter((key: unknown) => typeof key === 'string') : undefined, workSnapshots: Array.isArray(meta.workSnapshots) ? meta.workSnapshots : undefined, calendarSnapshots: Array.isArray(meta.calendarSnapshots) ? meta.calendarSnapshots : undefined, aliases: Array.isArray(meta.aliases) ? meta.aliases.filter((value: unknown) => typeof value === 'string') : [] };
 };
 const handleAtomicWrite = async (path: string, text: string) => {
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -172,6 +174,15 @@ export class Vault {
     return this.handleQueue(() => this.handleDailyNow(handleLocalDate()));
   }
 
+  handleWorkApply(batch: WorkBatch): Promise<Note> {
+    return this.handleQueue(async () => {
+      if (batch.date !== handleLocalDate()) throw new Error('날짜가 바뀌었습니다. 오늘 데일리에서 다시 가져와 주세요.');
+      const daily = await this.handleDailyNow(batch.date);
+      const merged = handleWorkMerge(daily.body, daily.workSnapshots || [], batch);
+      return this.handleSaveNow({ ...daily, body: merged.body }, undefined, undefined, undefined, merged.snapshots);
+    });
+  }
+
   handleCalendarApply(batch: CalendarBatch): Promise<Note> {
     return this.handleQueue(async () => {
       if (batch.date !== handleLocalDate()) throw new Error('날짜가 바뀌었습니다. 오늘 일정을 다시 가져와 주세요.');
@@ -249,7 +260,7 @@ export class Vault {
     });
   }
 
-  private async handleSaveNow(input: Note, appleSource?: AppleProvenance, dailyMeta?: Pick<Note, 'dailyDate' | 'dailyTaskKeys'>, calendarSnapshots?: CalendarSnapshot[]): Promise<Note> {
+  private async handleSaveNow(input: Note, appleSource?: AppleProvenance, dailyMeta?: Pick<Note, 'dailyDate' | 'dailyTaskKeys'>, calendarSnapshots?: CalendarSnapshot[], workSnapshots?: WorkSnapshot[]): Promise<Note> {
       const id = handleValidateId(input.id);
       if (typeof input.body !== 'string' || input.body.length > MAX_BODY || typeof input.title !== 'string' || typeof input.folder !== 'string') throw new Error('메모 내용이 올바르지 않습니다.');
       const path = join(this.root, 'Notes', `${id}.md`);
@@ -259,13 +270,13 @@ export class Vault {
       const title = input.title.trim().slice(0, 160) || '제목 없는 메모';
       const knownFolders = await this.handleReadFolders();
       const folder = knownFolders.includes(input.folder) ? input.folder : handleValidateFolder(input.folder || DEFAULT_FOLDER);
-      if (!appleSource && !dailyMeta && !calendarSnapshots && title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
+      if (!appleSource && !dailyMeta && !calendarSnapshots && !workSnapshots && title === previous.title && folder === previous.folder && input.body === previous.body && input.pinned === previous.pinned) return previous;
       const aliases = new Set(previous.aliases || []);
       if (title !== previous.title || folder !== previous.folder) {
         aliases.add(previous.title);
         aliases.add(`${previous.folder}/${previous.title}`);
       }
-      const note: Note = { ...previous, dailyDate: handleDailyDate(previous), ...dailyMeta, calendarSnapshots: calendarSnapshots || previous.calendarSnapshots, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], appleSource: appleSource || previous.appleSource, updatedAt: new Date().toISOString(), revision: randomUUID() };
+      const note: Note = { ...previous, dailyDate: handleDailyDate(previous), ...dailyMeta, calendarSnapshots: calendarSnapshots || previous.calendarSnapshots, workSnapshots: workSnapshots || previous.workSnapshots, title, folder, body: input.body, pinned: !!input.pinned, aliases: [...aliases], appleSource: appleSource || previous.appleSource, updatedAt: new Date().toISOString(), revision: randomUUID() };
       const historyDir = join(this.root, '.wiki/history', id);
       await mkdir(historyDir, { recursive: true });
       if (title !== previous.title || folder !== previous.folder || input.body !== previous.body || input.pinned !== previous.pinned) await writeFile(join(historyDir, `${previous.revision}.md`), source, { mode: 0o600 });

@@ -16,10 +16,10 @@ export const CalendarSettings = ({ onSync }: { onSync: () => Promise<void> }) =>
     window.wiki.handleCalendarState().then(next => { if (active) handleState(next); }).catch(() => { if (active) setMessage('캘린더 설정을 읽지 못했습니다.'); });
     return () => { active = false; if (login.current) void window.wiki.handleCalendarCancel(); };
   }, []);
-  const handleRun = async (work: () => Promise<CalendarState>, success: string, isLogin = false) => {
+  const handleRun = async (work: () => Promise<CalendarState>, success: string | ((next: CalendarState) => string), isLogin = false) => {
     if (working.current) return;
     working.current = true; login.current = isLogin; setBusy(true); setConnecting(isLogin); setMessage(isLogin ? '브라우저에서 Google 로그인과 권한 허용을 완료해 주세요.' : '');
-    try { handleState(await work()); setMessage(success); }
+    try { const next = await work(); handleState(next); setMessage(typeof success === 'function' ? success(next) : success); }
     catch (cause) { setMessage(String(cause instanceof Error ? cause.message : cause).replace(/^Error invoking remote method '[^']+': Error: /, '')); }
     finally { working.current = false; login.current = false; setBusy(false); setConnecting(false); }
   };
@@ -30,11 +30,12 @@ export const CalendarSettings = ({ onSync }: { onSync: () => Promise<void> }) =>
     <div className="calendar-settings__actions">
       <button className="wiki__button" disabled={busy} onClick={() => {
         if (state?.connected && !window.confirm('다른 클라이언트를 선택하면 현재 기기의 캘린더 연결을 교체합니다. 기존 데일리는 남습니다. 계속할까요?')) return;
-        void handleRun(() => window.wiki.handleCalendarImportClient(), '클라이언트 설정을 확인했습니다.');
+        void handleRun(() => window.wiki.handleCalendarImportClient(), next => next.configured ? 'OAuth 설정이 등록되어 있습니다. Google 계정 연결을 눌러 주세요.' : 'OAuth 파일이 등록되지 않았습니다. 데스크톱 앱 JSON 파일을 선택해 주세요.');
       }}>{state?.configured ? 'OAuth JSON 다시 선택' : 'OAuth JSON 선택'}</button>
       <button className="wiki__button" disabled={busy || !state?.configured} onClick={() => void handleRun(() => window.wiki.handleCalendarConnect(), '연결했습니다. 가져올 캘린더를 선택해 주세요.', true)}>{state?.connected ? '다시 로그인 / 계정 변경' : 'Google 계정 연결'}</button>
       {connecting && <button className="wiki__button" onClick={() => void window.wiki.handleCalendarCancel()}>로그인 취소</button>}
     </div>
+    {!state?.configured && <p>계정 연결을 활성화하려면 먼저 OAuth JSON을 등록해야 합니다. 현재 버전은 Google 로그인 버튼만으로 연결되는 방식이 아닙니다.</p>}
     {state?.connected && <>
       <fieldset disabled={busy}><legend>가져올 캘린더</legend>
         <div className="calendar-settings__calendars">{state.calendars.map(calendar => <label key={calendar.id}><input type="checkbox" checked={ids.includes(calendar.id)} onChange={event => setIds(values => event.target.checked ? [...values, calendar.id] : values.filter(id => id !== calendar.id))} /><span>{calendar.name}{calendar.primary ? ' · 기본' : ''}</span></label>)}</div>
