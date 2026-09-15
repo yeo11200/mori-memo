@@ -10,6 +10,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 - [Codex·Claude AI 스킬 개발계획서](Docs/mori-ai-skills-development-plan.md)
 - [MORI 연결 스킬 설치·사용법 (0.1.0)](Docs/mori-context-skill.md)
 - [무료 배포·마케팅·수익화 계획](Docs/marketing-revenue-plan.md)
+- [유료 기능 아이데이션·상품 가설·개발 우선순위](Docs/paid-feature-ideas.md)
 - [0.8.0 홍보 전략과 Threads·LinkedIn·벨로그 게시글](Docs/marketing/README.md)
 - [다음 개발 로드맵](Docs/next-roadmap.md)
 - [배포 계획](Docs/deployment-plan.md)
