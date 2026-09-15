@@ -15,7 +15,8 @@ MORI DMG는 홈페이지에 직접 넣지 않고, 공개 Google Drive 폴더에�
 3. `release/MORI-<버전>-arm64.dmg`가 생성됐는지 확인한다. 예: `release/MORI-0.8.0-arm64.dmg`.
 4. 생성된 DMG와 `.blockmap`을 Drive 배포 폴더에 업로드한다.
 5. 이전 버전은 삭제하지 않고 유지한다. 최신 버전과 파일명은 홈페이지 문구의 `currentVersion`과 맞춘다.
-6. `site/config.js`의 `currentVersion`만 새 버전으로 바꾸고 사이트를 빌드·푸시한다.
+6. `site/config.js`의 `releases` 목록에 버전·변경 내용·Drive 링크를 추가한다. 현재 0.8.0과 0.5.2는 같은 공개 폴더 링크를 사용하며, 카드가 버전명을 함께 표시해 해당 파일을 고르게 한다.
+7. `currentVersion`을 최신 버전으로 바꾸고 사이트를 빌드·푸시한다.
 
 ## 파일명 규칙
 
