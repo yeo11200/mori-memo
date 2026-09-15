@@ -69,11 +69,11 @@
     card.append(highlights);
     const url = handleSafeURL(release.url) || handleSafeURL(window.MORI_SITE_CONFIG.downloadUrl);
     const link = document.createElement('a');
-    const isFolderRelease = window.MORI_SITE_CONFIG.downloadMode === 'folder';
+    const isFolderRelease = window.MORI_SITE_CONFIG.downloadMode === 'folder' && url === handleSafeURL(window.MORI_SITE_CONFIG.downloadUrl);
     link.className = url && release.url ? 'button button--small' : 'release-card__pending';
     link.href = url || '#download';
     if (url) { link.target = '_blank'; link.rel = 'noreferrer'; }
-    link.textContent = isFolderRelease ? 'Drive에서 ' + (release.version || '이 버전') + ' 파일 선택 ↗' : '이 버전 다운로드 ↗';
+    link.textContent = isFolderRelease ? 'Drive에서 ' + (release.version || '이 버전') + ' 파일 선택 ↗' : (release.version || '이 버전') + ' 다운로드 ↗';
     card.append(link);
     return card;
   }));
