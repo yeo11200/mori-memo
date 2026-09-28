@@ -137,6 +137,9 @@ h3{font-size:1.5rem;line-height:1.5;margin:20px 0 12px}
 .faq summary:after{content:"+";position:absolute;right:5px;font-size:1.5rem;top:19px;color:var(--blue);font-weight:400}
 .faq details[open] summary:after{content:"−"}
 .faq details p{margin:0;padding:0 36px 24px 0;font-size:1rem;max-width:800px}
+.faq details pre{max-width:800px;margin:0 36px 20px 0;padding:14px 16px;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#f5f9fc;color:#173b55;font-size:.875rem;line-height:1.6}
+.faq details pre code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.faq details .faq__security-note{font-size:.875rem}
 .download{background:linear-gradient(135deg,#e9f7ff,#f5fbff 60%,#dff2ff);border-block:1px solid #dcebf4;text-align:center}
 .download__inner>img{margin:0 auto 22px;border-radius:15px;box-shadow:0 10px 20px #1684b125}
 .download h2{font-size:clamp(2.25rem,4vw,3.5rem)}
