@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, safeStorage, shell, Tray, type IpcMainInvokeEvent, type Input } from 'electron';
+import { watch } from 'node:fs';
 import { readFile, writeFile, mkdir, mkdtemp, rm, cp, rename, lstat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -71,6 +72,16 @@ const handleInstallMoriSkill = async () => {
     installed.push(target);
   }
   return { installed, backup };
+};
+
+// 연결 스킬 등 외부 도구가 Notes 폴더에 쓴 메모를 앱을 다시 열지 않아도 목록에 반영합니다.
+// ponytail: 앱 자신의 저장에도 전체 목록을 다시 읽습니다. 메모가 수천 개로 늘면 fingerprint 비교로 자체 저장을 건너뛰도록 보완합니다.
+const handleWatchNotes = () => {
+  let timer: NodeJS.Timeout | undefined;
+  watch(join(vault.root, 'Notes'), () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => window?.webContents.send('wiki:command', 'notes-changed'), 400);
+  }).on('error', () => { /* 감시가 끊기면 이전처럼 다시 열 때 반영됩니다. */ });
 };
 
 const handleShowQuickNote = async () => {
@@ -357,6 +368,7 @@ else {
     workService = new WorkService(new CalendarSecureStore(join(userData, 'Secrets', 'work-connections.bin'), safeStorage));
     googleCalendar = new GoogleCalendarService(new CalendarSecureStore(join(userData, 'Secrets', 'google-calendar.bin'), safeStorage), url => shell.openExternal(url));
     await vault.handleInitialize();
+    handleWatchNotes();
     settings = handleValidateSettings(handleDefaults());
     try { settings = handleValidateSettings(JSON.parse(await readFile(handleSettingsPath(), 'utf8'))); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') startupWarnings.push('설정 파일을 읽지 못해 기본 설정으로 시작했습니다.'); }

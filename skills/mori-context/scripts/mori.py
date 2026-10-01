@@ -147,7 +147,7 @@ def create(root, path, approval):
             return dict(documentId=identifier, created=False, alreadyExists=True)
     finally:
         os.unlink(temporary)
-    return dict(documentId=identifier, created=True, refresh='Save pending edits and restart MORI to refresh the list')
+    return dict(documentId=identifier, created=True, refresh='MORI 0.9.0+ shows the note automatically; older versions need a restart')
 
 
 def main():
