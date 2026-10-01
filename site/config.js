@@ -8,20 +8,13 @@ window.MORI_SITE_CONFIG = Object.freeze({
       version: '0.9.0', date: '2026-10-01', title: '외부 메모 즉시 반영',
       summary: 'Codex·Claude가 저장한 메모가 앱을 다시 열지 않아도 바로 보여요.',
       highlights: ['연결 스킬이 저장한 메모를 목록에 자동 반영', '보관함 폴더 변화 감지', '앱을 끄고 켤 필요 없음'],
-      // Drive에 MORI-0.9.0-arm64.dmg를 올린 뒤 파일 공유 링크로 바꿉니다.
-      url: '',
+      url: 'https://drive.google.com/file/d/14pdIvyX3q-_lcnXQuNHBV4TN-33jXKwS/view?usp=drive_link',
     },
     {
       version: '0.8.0', date: '2026-09-15', title: '데일리 업무 허브',
       summary: '오늘 데일리에 일정과 담당 업무를 한곳에 모아요.',
       highlights: ['Google Calendar 일정 연동', 'Jira·GitHub·GitLab 담당 업무 연동', '프로젝트·상태 필터와 자동 갱신', '외부 원본은 읽기 전용으로 보존'],
       url: 'https://drive.google.com/file/d/1yom4762unBShnHOMNYWQLkXaaOTvcVbd/view?usp=drive_link',
-    },
-    {
-      version: '0.5.2', date: '2026-09-11', title: '연결된 생각의 시작',
-      summary: '메모를 연결하고 나만의 지식 그래프를 만들어요.',
-      highlights: ['Markdown 메모와 자동 저장', '메모 간 링크와 지식 그래프', 'Apple Silicon용 무료 DMG', 'Apple 메모 가져오기'],
-      url: 'https://drive.google.com/file/d/16shUAIJG6b_G6aSVKDJFvL3RQVf2qmnn/view?usp=drive_link',
     },
   ],
 });
