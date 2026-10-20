@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { AccountSettings } from './AccountSettings';
+import type { BillingState } from '../../shared/billing';
 import { handleLocalDate } from '../../shared/daily';
 import { REPORT_MAX_CHARS, REPORT_MAX_SOURCES, REPORT_TEMPLATES, handleReportDate, handleReportRange } from '../../shared/reports';
 import type { ReportDraft, ReportTemplate } from '../../shared/reports';
@@ -31,6 +33,8 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [sourceId, setSourceId] = useState('');
+  const [accountState, setAccountState] = useState<BillingState | null>(null);
+  const [showAccount, setShowAccount] = useState(false);
   const inspected = notes.find(note => note.id === sourceId);
   const template = templates.find(item => item.id === templateId) || templates[0];
   const picked = snapshot.filter(note => selected.includes(note.id));
@@ -41,6 +45,7 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
     const previous = document.activeElement as HTMLElement | null;
     root.current?.querySelector<HTMLInputElement>('input')?.focus();
     void window.wiki.handleReportTemplates().then(setTemplates).catch(cause => setError(errorText(cause)));
+    void window.wiki.handleBillingState().then(setAccountState).catch(cause => setError(errorText(cause)));
     return () => { if (previous?.isConnected) previous.focus(); };
   }, []);
   useEffect(() => {
@@ -50,7 +55,7 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
   const perform = async (kind: string, work: () => Promise<void>) => {
     if (lock.current) return;
     lock.current = true; setBusy(kind); setError(''); setNotice('');
-    try { await work(); } catch (cause) { setError(errorText(cause)); }
+    try { await work(); } catch (cause) { const text = errorText(cause); setError(text.replace('PRO_REQUIRED: ', '')); if (text.includes('PRO_REQUIRED:')) setShowAccount(true); }
     finally { lock.current = false; setBusy(''); }
   };
   const generate = (ai: boolean) => perform(ai ? 'ai' : 'outline', async () => {
@@ -79,7 +84,9 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
       }
     }}>
       <div className="wiki__modal__header"><h2>주간보고 만들기</h2><button className="wiki__icon-button" aria-label="보고서 창 닫기" disabled={!!busy} onClick={onClose}><X size={17} /></button></div>
-      <p>데일리와 업무 기록을 모아 나만의 양식으로 정리하세요. 현재 무료 체험 기능입니다.</p>
+      <p>데일리와 업무 기록을 모아 나만의 양식으로 정리하세요. {accountState?.mode === 'commercial' ? 'AI 보고서와 맞춤 템플릿 작성은 Pro 기능입니다. 원문 모음은 무료입니다.' : '현재 무료 체험 기능입니다.'}</p>
+      {accountState?.mode === 'commercial' && <button className="wiki__button" onClick={() => setShowAccount(value => !value)}>계정 및 Pro · 월 2,900원</button>}
+      {showAccount && <AccountSettings onChange={setAccountState} />}
       {!draft ? <>
         <div className="report-dialog__row">
           <label>시작일<input type="date" aria-label="보고서 시작일" value={start} disabled={!!busy} onChange={event => { setStart(event.target.value); setSelected([]); }} /></label>

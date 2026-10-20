@@ -11,7 +11,11 @@
     "test": "vitest run",
     "start": "electron .",
     "package:mac": "npm run build && electron-builder --mac dir --arm64",
-    "package:dmg": "npm run build && electron-builder --mac dmg --arm64"
+    "package:dmg": "npm run build && electron-builder --mac dmg --arm64",
+    "build:billing": "node scripts/build-billing.mjs",
+    "start:billing": "node --env-file=.env.billing dist-billing/server.mjs",
+    "setup:billing": "node scripts/billing-keys.mjs",
+    "build:commercial": "node --env-file=.env.billing scripts/build-commercial.mjs"
   },
   "build": {
     "appId": "local.personalwiki.desktop",

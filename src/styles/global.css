@@ -322,3 +322,12 @@ body:has(.quick-note) { min-width:0; overflow:hidden; }
 .report-dialog__references > div { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; }
 .report-dialog__error { color: var(--mori-danger) !important; }
 .report-dialog :focus-visible { outline: 2px solid var(--mori-primary); outline-offset: 2px; }
+
+.account-settings { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--mori-border); border-radius: 9px; margin: 12px 0; font-size: 12px; line-height: 1.7; }
+.account-settings h3, .account-settings p { margin: 0; }
+.account-settings label { display: grid; gap: 6px; }
+.account-settings input:not([type=checkbox]) { width: 100%; padding: 9px; border: 1px solid var(--mori-border); border-radius: 6px; background: var(--mori-surface); color: var(--mori-text); }
+.account-settings .account-settings__consent { display: flex; align-items: start; gap: 9px; }
+.account-settings__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.account-settings input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 5px; }

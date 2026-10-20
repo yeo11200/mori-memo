@@ -2,6 +2,14 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleBillingState: force => ipcRenderer.invoke('wiki:billing-state', force),
+  handleBillingSendCode: email => ipcRenderer.invoke('wiki:billing-code', email),
+  handleBillingVerify: (email, code) => ipcRenderer.invoke('wiki:billing-verify', email, code),
+  handleBillingAction: action => ipcRenderer.invoke('wiki:billing-action', action),
+  handleBillingCheckout: purpose => ipcRenderer.invoke('wiki:billing-checkout', purpose),
+  handleBillingRefund: id => ipcRenderer.invoke('wiki:billing-refund', id),
+  handleBillingRevoke: id => ipcRenderer.invoke('wiki:billing-revoke', id),
+  handleBillingLogout: () => ipcRenderer.invoke('wiki:billing-logout'),
   handleReportTemplates: () => ipcRenderer.invoke('wiki:report-templates'),
   handleSaveReportTemplate: template => ipcRenderer.invoke('wiki:report-template-save', template),
   handleDeleteReportTemplate: id => ipcRenderer.invoke('wiki:report-template-delete', id),

@@ -4,6 +4,7 @@ import type { AppSettings, ShortcutBinding } from '../../shared/types';
 import { WorkSettings } from './WorkSettings';
 import type { WorkProvider } from '../../shared/work';
 import { CalendarSettings } from './CalendarSettings';
+import { AccountSettings } from './AccountSettings';
 
 export const commandLabels: Record<string, string> = {
   capture: '화면 캡처', 'quick-note': '빠른 메모', new: '새 메모', search: '검색창',
@@ -86,7 +87,8 @@ export const SettingsPanel = ({ settings, onSave, onClose, onCalendarSync, onWor
   const handleBinding = (id: string, patch: Partial<ShortcutBinding>) => setDraft(current => ({ ...current, shortcuts: current.shortcuts?.map(item => item.id === id ? { ...item, ...patch } : item) }));
   return <div className="wiki__settings">
     <div className="wiki__panel__header"><h2>설정</h2><button aria-label="설정 닫기" className="wiki__icon-button" onClick={onClose}><X size={16} /></button></div>
-    <p className="wiki__settings__help">MORI 0.8.0 · 일정과 담당 업무를 데일리로</p>
+    <p className="wiki__settings__help">MORI · 로컬 지식과 업무 기록</p>
+    <AccountSettings />
     <WorkSettings onSync={onWorkSync} />
     <CalendarSettings onSync={onCalendarSync} />
     <label>AI 연결 방식<select aria-label="AI 연결 방식" value={draft.provider} onChange={event => handleChangeProvider(event.target.value as AppSettings['provider'])}>

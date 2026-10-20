@@ -19,3 +19,5 @@ Secrets/
 *.p8
 *.pem
 *.key
+
+dist-billing/

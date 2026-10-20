@@ -9,6 +9,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Vault } from './vault/vault';
 import { ReportService } from './reports/report-service';
+import { BillingClient, type BillingConfig } from './billing/billing-client';
 import { AppleImportService } from './apple-notes/import-service';
 import { handleReadAppleNotes } from './apple-notes/source';
 import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
@@ -35,6 +36,8 @@ let vault: Vault;
 let appleImports: AppleImportService;
 let settings: AppSettings;
 let apiKeyStore: APIKeyStore;
+let billing: BillingClient;
+declare const __MORI_BILLING_CONFIG__: BillingConfig;
 let workService: WorkService;
 let googleCalendar: GoogleCalendarService;
 let isCapturing = false;
@@ -214,6 +217,17 @@ const handleIPC = () => {
   });
   ipcMain.handle('wiki:quick-hide', event => { handleValidateQuickSender(event); if (!quickSaving) quickWindow?.hide(); });
   const handleOn = (channel: string, fn: (...args: any[]) => unknown) => ipcMain.handle(`wiki:${channel}`, (event, ...args) => { handleValidateSender(event); return fn(...args); });
+  handleOn('billing-state', force => billing.state(force === true));
+  handleOn('billing-code', email => billing.sendCode(email));
+  handleOn('billing-verify', (email, code) => billing.verify(email, code));
+  handleOn('billing-action', action => {
+    if (!['trial', 'restore', 'cancel', 'resume'].includes(action)) throw new Error('지원하지 않는 계정 작업입니다.');
+    return billing.action(action);
+  });
+  handleOn('billing-checkout', purpose => billing.checkout(purpose));
+  handleOn('billing-refund', id => billing.refund(id));
+  handleOn('billing-revoke', id => billing.revoke(id));
+  handleOn('billing-logout', () => billing.logout());
   handleOn('work-state', provider => workService.handleState(provider));
   handleOn('work-connect', input => workService.handleConnect(input));
   handleOn('work-select', (provider, selection) => workService.handleSelect(provider, selection));
@@ -271,12 +285,16 @@ const handleIPC = () => {
       : await runner.handleRun(request, { provider: settings.provider, executablePath: settings.provider === 'codex' ? settings.codexPath : settings.claudePath, model: settings.model, timeoutMs: 180000 });
   });
   handleOn('report-templates', () => reports.handleListTemplates());
-  handleOn('report-template-save', template => reports.handleSaveTemplate(template));
+  handleOn('report-template-save', async template => { await billing.require('reports.template_write'); return reports.handleSaveTemplate(template); });
   handleOn('report-template-delete', id => reports.handleDeleteTemplate(id));
   handleOn('report-generate', async (input, ai) => {
     if (isAIWorking) throw new Error('진행 중인 AI 작업을 먼저 마치거나 취소해 주세요.');
     isAIWorking = true; reportCancelled = false;
-    try { return await reports.handleGenerate(input, ai); }
+    try {
+      if (ai === true) await billing.require('reports.ai_generate');
+      if (reportCancelled) throw new Error('보고서 생성을 취소했습니다.');
+      return await reports.handleGenerate(input, ai);
+    }
     finally { isAIWorking = false; }
   });
   handleOn('report-save', (id, body) => reports.handleSave(id, body));
@@ -391,6 +409,11 @@ else {
     const userData = process.env.WIKI_DATA_DIR || app.getPath('userData');
     vault = new Vault(join(userData, 'Vault'));
     apiKeyStore = new APIKeyStore(join(userData, 'Secrets', 'openai-api-key.bin'), safeStorage);
+    const billingConfig = !app.isPackaged && process.env.MORI_COMMERCIAL_BUILD !== undefined
+      ? { enabled: process.env.MORI_COMMERCIAL_BUILD === '1', url: process.env.MORI_BILLING_URL || '', publicKeys: JSON.parse(process.env.MORI_BILLING_PUBLIC_KEYS || '{}') }
+      : __MORI_BILLING_CONFIG__;
+    if (app.isPackaged && billingConfig.enabled && !billingConfig.url.startsWith('https://')) throw new Error('상용 계정 서버에는 HTTPS가 필요합니다.');
+    billing = new BillingClient(billingConfig, new CalendarSecureStore(join(userData, 'auth', 'session.bin'), safeStorage), url => shell.openExternal(url));
     workService = new WorkService(new CalendarSecureStore(join(userData, 'Secrets', 'work-connections.bin'), safeStorage));
     googleCalendar = new GoogleCalendarService(new CalendarSecureStore(join(userData, 'Secrets', 'google-calendar.bin'), safeStorage), url => shell.openExternal(url));
     await vault.handleInitialize();

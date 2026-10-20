@@ -55,6 +55,14 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleBillingState(force?: boolean): Promise<import('./billing').BillingState>;
+  handleBillingSendCode(email: string): Promise<void>;
+  handleBillingVerify(email: string, code: string): Promise<import('./billing').BillingState>;
+  handleBillingAction(action: 'trial' | 'restore' | 'cancel' | 'resume'): Promise<import('./billing').BillingState>;
+  handleBillingCheckout(purpose: 'purchase' | 'update_method'): Promise<void>;
+  handleBillingRefund(id: string): Promise<import('./billing').BillingState>;
+  handleBillingRevoke(id: string): Promise<import('./billing').BillingState>;
+  handleBillingLogout(): Promise<import('./billing').BillingState>;
   handleReportTemplates(): Promise<import('./reports').ReportTemplate[]>;
   handleSaveReportTemplate(template: import('./reports').ReportTemplate): Promise<import('./reports').ReportTemplate[]>;
   handleDeleteReportTemplate(id: string): Promise<import('./reports').ReportTemplate[]>;
