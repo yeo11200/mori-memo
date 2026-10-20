@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, safeStorage, shell, Tray, type IpcMainInvokeEvent, type Input } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, safeStorage, shell, Tray, type IpcMainInvokeEvent, type Input } from 'electron';
 import { watch } from 'node:fs';
 import { readFile, writeFile, mkdir, mkdtemp, rm, cp, rename, lstat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Vault } from './vault/vault';
+import { ReportService } from './reports/report-service';
 import { AppleImportService } from './apple-notes/import-service';
 import { handleReadAppleNotes } from './apple-notes/source';
 import { CLIRunner, handleDiscoverExecutable } from './cli/cli-runner';
@@ -262,6 +263,31 @@ const handleIPC = () => {
     return vault.handleCreate(title, body, folder);
   });
   handleOn('save', (note: Note) => vault.handleSave(note));
+  let reportCancelled = false;
+  const reports = new ReportService(vault, async request => {
+    if (reportCancelled) throw new Error('보고서 생성을 취소했습니다.');
+    return settings.provider === 'openai'
+      ? await openAIRunner.handleRun(request, { apiKey: await apiKeyStore.handleGet() || '', model: settings.model || 'gpt-5-nano', timeoutMs: 180000 })
+      : await runner.handleRun(request, { provider: settings.provider, executablePath: settings.provider === 'codex' ? settings.codexPath : settings.claudePath, model: settings.model, timeoutMs: 180000 });
+  });
+  handleOn('report-templates', () => reports.handleListTemplates());
+  handleOn('report-template-save', template => reports.handleSaveTemplate(template));
+  handleOn('report-template-delete', id => reports.handleDeleteTemplate(id));
+  handleOn('report-generate', async (input, ai) => {
+    if (isAIWorking) throw new Error('진행 중인 AI 작업을 먼저 마치거나 취소해 주세요.');
+    isAIWorking = true; reportCancelled = false;
+    try { return await reports.handleGenerate(input, ai); }
+    finally { isAIWorking = false; }
+  });
+  handleOn('report-save', (id, body) => reports.handleSave(id, body));
+  handleOn('report-copy', (id, body) => clipboard.writeText(reports.handleDocument(id, body).body));
+  handleOn('report-export', async (id, body) => {
+    const document = reports.handleDocument(id, body);
+    const { canceled, filePath } = await dialog.showSaveDialog(window!, { title: '보고서 Markdown 내보내기', defaultPath: document.title.replace(/[/\\:*?"<>|]/g, '-') + '.md', filters: [{ name: 'Markdown', extensions: ['md'] }] });
+    if (canceled || !filePath) return null;
+    await writeFile(filePath, document.body, { mode: 0o600 });
+    return filePath;
+  });
   handleOn('daily-transfer', input => vault.handleDailyTransfer(input));
   handleOn('add-link', (sourceId: string, targetId: string, revision: string, reason: string) => vault.handleAddLink(sourceId, targetId, revision, reason));
   handleOn('trash', (id: string) => vault.handleTrash(id));
@@ -274,7 +300,7 @@ const handleIPC = () => {
   handleOn('rename-folder', (from: string, to: string) => vault.handleRenameFolder(from, to));
   handleOn('delete-folder', (name: string) => vault.handleDeleteFolder(name));
   handleOn('ai', handleRunAI);
-  handleOn('cancel-ai', () => { runner.handleCancel(); openAIRunner.handleCancel(); });
+  handleOn('cancel-ai', () => { reportCancelled = true; runner.handleCancel(); openAIRunner.handleCancel(); });
   handleOn('set-api-key', async (key: string) => { await apiKeyStore.handleSet(key); settings.apiKeyConfigured = (await apiKeyStore.handleStatus()).configured; });
   handleOn('list-models', async (provider?: AppSettings['provider']) => {
     const selected = provider || settings.provider;

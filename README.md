@@ -4,6 +4,7 @@ Electron + React + TypeScript로 만든 로컬 우선 개인 위키입니다.
 
 ## 계획서와 개발 기록
 
+- [주간보고·맞춤 템플릿 사용법과 구현 기록](Docs/weekly-reports.md)
 - [Jira·GitHub·GitLab 담당 업무 연동 (0.8.0)](Docs/work-connections.md)
 - [Apple 메모 연동 사용법·구현 기록 (0.4.0)](Docs/apple-notes-implementation.md)
 - [MORI 앱 개발계획서](Docs/mori-app-development-plan.md)
@@ -61,6 +62,8 @@ npm run package:mac
 **MORI 0.2.0:** 기본 **⌘⇧Space**로 백그라운드 빠른 메모 창을 열고 **⌘Enter**로 미분류에 저장합니다. 앱 창을 닫아도 메뉴 막대 M에서 대기합니다. 완전 종료 시 전역 단축키도 종료되며, 설정의 **로그인 시 MORI 자동 실행**을 켜면 다음 로그인부터 자동으로 실행됩니다. Escape로 숨긴 빠른 메모 초안은 앱을 완전히 종료하기 전에 저장하세요.
 
 ## 기능
+
+**주간보고·맞춤 템플릿 무료 체험:** 왼쪽 **주간보고 만들기**에서 기간과 기록을 선택하고 주간보고·스탠드업·회고 또는 저장한 회사 양식으로 초안을 만듭니다. AI 없이 원문을 모으거나 기존 AI 연결로 생성할 수 있습니다. 출처를 확인하고 수정한 뒤 복사·Markdown 내보내기·새 메모 저장을 선택하세요. 원본 메모는 유지합니다. [사용법·제한·검증 범위](Docs/weekly-reports.md)를 참고하세요.
 
 **0.9.0 외부 메모 즉시 반영:** 연결 스킬 등 외부 도구가 보관함 Notes 폴더에 저장한 메모를 앱을 다시 열지 않아도 목록에 반영합니다. `node scripts/external-note-smoke.mjs`로 확인합니다.
 

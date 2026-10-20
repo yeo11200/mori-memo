@@ -6,6 +6,7 @@ import { NoteEditor } from './NoteEditor';
 import { CommandPalette } from './CommandPalette';
 import { LinkDialog } from './LinkDialog';
 import { DailyDialog } from './DailyDialog';
+import { ReportDialog } from './ReportDialog';
 import { handleDailyDate, handleLocalDate } from '../../shared/daily';
 import { AppleNotesDialog } from '../components/features/apple-notes';
 import { useWiki } from './hooks/useWiki';
@@ -24,6 +25,7 @@ export const App = () => {
   const [showPalette, setShowPalette] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [dailyMode, setDailyMode] = useState<'send' | 'carry' | null>(null);
+  const [showReport, setShowReport] = useState(false);
   const [suggestedTargetId, setSuggestedTargetId] = useState('');
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [pinnedOnly, setPinnedOnly] = useState(false);
@@ -55,6 +57,7 @@ export const App = () => {
   }, []);
 
   const handleCommand = (command: string) => {
+    if (showReport && command !== 'notes-changed' && command !== 'close') return;
     if (command === 'notes-changed') void window.wiki.handleBootstrap().then(data => wiki.handleReloadNotes(data.notes)).catch(wiki.handleReportError);
     if (command === 'capture') void wiki.handleCapture();
     if (command === 'new' || command === 'quick-note') { setPreview(false); void wiki.handleCreate('blank', selectedFolder || undefined); }
@@ -99,6 +102,7 @@ export const App = () => {
         <nav className="wiki__nav"><button className={`wiki__nav__item${!pinnedOnly ? ' wiki__nav__item--active' : ''}`} onClick={() => { setPinnedOnly(false); setQuery(''); setSelectedFolder(''); }}><Menu size={15} />모든 메모 <span>{wiki.notes.length}</span></button><button className={`wiki__nav__item${pinnedOnly ? ' wiki__nav__item--active' : ''}`} onClick={() => setPinnedOnly(true)}><Pin size={15} />고정한 메모 <span>{wiki.notes.filter(note => note.pinned).length}</span></button><button className="wiki__nav__item" onClick={() => void handleOpenTrash()}><Trash2 size={15} />휴지통</button></nav>
         <FolderPanel folders={wiki.folders} notes={wiki.notes} selected={selectedFolder} busy={wiki.isMutating} onSelect={folder => { setSelectedFolder(folder); setQuery(''); setPinnedOnly(false); }} onChange={async (action, from, to) => { const ok = await wiki.handleFolderChange(action, from, to); if (ok && selectedFolder === from) setSelectedFolder(action === 'delete' ? '미분류' : to || from); return ok; }} />
         <button className="wiki__button" disabled={wiki.isMutating} onClick={() => { setQuery(''); setSelectedFolder(''); setPinnedOnly(false); void wiki.handleCreate('daily'); }}>오늘 데일리 열기</button>
+        <button className="wiki__button" disabled={wiki.isMutating || !!wiki.aiAction} onClick={() => void (async () => { try { await wiki.handleFlush(); const data = await window.wiki.handleBootstrap(); await wiki.handleReloadNotes(data.notes); setShowReport(true); } catch (cause) { wiki.handleReportError(cause); } })()}>주간보고 만들기</button>
         <button className="wiki__button" onClick={() => setShowGuide(true)}>사용 가이드</button>
         <button className="wiki__button wiki__palette-launch" onClick={() => handleCommand('palette')}>명령 팔레트</button>
         <label className="wiki__section-title">{selectedFolder || '최근 메모'} <span>{handleShortcutLabel('search')} 검색</span></label>
@@ -115,6 +119,7 @@ export const App = () => {
       </aside>
     </main>
     {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
+    {showReport && <ReportDialog notes={wiki.notes} settings={wiki.settings} onClose={() => setShowReport(false)} onSaved={async () => { const data = await window.wiki.handleBootstrap(); await wiki.handleReloadNotes(data.notes); }} />}
     {dailyMode && wiki.draft && <DailyDialog source={wiki.draft} notes={wiki.notes} carry={dailyMode === 'carry'} onAdd={wiki.handleDailyTransfer} onClose={() => setDailyMode(null)} />}
     {showAppleNotes && <AppleNotesDialog notes={wiki.notes} onOperation={wiki.handleAppleOperation} onClose={() => setShowAppleNotes(false)} />}
     {linkSource && <LinkDialog initialTargetId={suggestedTargetId} source={linkSource} notes={wiki.notes} onAdd={(targetId, reason) => wiki.handleAddLink(linkSource.id, targetId, reason)} onClose={() => { setLinkSourceId(null); setSuggestedTargetId(''); }} />}

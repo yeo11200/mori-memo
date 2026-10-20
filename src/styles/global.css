@@ -298,3 +298,27 @@ body:has(.quick-note) { min-width:0; overflow:hidden; }
 .work-settings__actions { display: grid; gap: 8px; }
 .work-settings__actions button { white-space: normal; text-align: left; }
 .work-settings__account { font-weight: 600; }
+
+.report-dialog { width: min(880px, calc(100vw - 48px)); max-height: 88vh; }
+.report-dialog > p { color: var(--mori-text-secondary); line-height: 1.7; font-size: 13px; }
+.report-dialog__row { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 14px 0; }
+.report-dialog__row > label { flex: 1; min-width: 150px; }
+.report-dialog label:not(.report-dialog__check) { display: grid; gap: 7px; font-size: 13px; color: var(--mori-text-secondary); }
+.report-dialog input:not([type=checkbox]), .report-dialog select, .report-dialog textarea { width: 100%; padding: 10px; border: 1px solid var(--mori-border); border-radius: 7px; background: var(--mori-surface); color: var(--mori-text); font: inherit; }
+.report-dialog textarea { resize: vertical; min-height: 80px; }
+.report-dialog .report-dialog__body { min-height: 290px; font: 13px/1.8 ui-monospace, monospace; }
+.report-dialog__check { display: flex; gap: 9px; align-items: center; font-size: 13px; }
+.report-dialog__field { margin: 15px 0; }
+.report-dialog__sources { max-height: 270px; overflow: auto; border-block: 1px solid var(--mori-border); margin-top: 12px; }
+.report-dialog__source { padding: 12px 4px; border-bottom: 1px solid var(--mori-border); }
+.report-dialog .report-dialog__source > label { display: flex; align-items: start; gap: 10px; cursor: pointer; }
+.report-dialog__source small { display: block; color: var(--mori-muted); margin-top: 5px; }
+.report-dialog pre { max-height: 220px; overflow: auto; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--mori-bg); font: 12px/1.7 ui-monospace, monospace; }
+.report-dialog details { margin: 8px 0; font-size: 12px; }
+.report-dialog summary { cursor: pointer; color: var(--mori-primary); }
+.report-dialog__template { display: grid; gap: 14px; border: 1px solid var(--mori-border); border-radius: 9px; padding: 16px; }
+.report-dialog__hint { font-size: 12px !important; color: var(--mori-muted) !important; }
+.report-dialog__consent { padding: 14px; border-radius: 8px; background: var(--mori-primary-soft); }
+.report-dialog__references > div { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; }
+.report-dialog__error { color: var(--mori-danger) !important; }
+.report-dialog :focus-visible { outline: 2px solid var(--mori-primary); outline-offset: 2px; }

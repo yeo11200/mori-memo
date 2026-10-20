@@ -1,0 +1,90 @@
+import { _electron as electron, expect } from '@playwright/test';
+import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
+const directory = await mkdtemp(join(tmpdir(), 'mori-report-smoke-'));
+const fixture = join(directory, 'fixture-cli');
+const callsPath = join(directory, 'calls.json');
+await writeFile(fixture, `#!/usr/bin/env node
+const fs = require('node:fs');
+let input = '';
+process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('end', () => {
+ const content = JSON.parse(input.split('<note>\\n')[1].split('\\n</note>')[0]);
+ fs.writeFileSync(${JSON.stringify(callsPath)}, JSON.stringify(content));
+ const result = { sections: ['주요 성과', '진행 중인 업무', '장애물과 지원 요청', '다음 계획'].map((heading, i) => ({heading, items: i ? [] : [{text: '로그인 오류 메시지를 개선했다.', sourceIds: [content.records[0].id]}]})) };
+ setTimeout(() => fs.writeFileSync(process.argv[process.argv.indexOf('--output-last-message') + 1], JSON.stringify(result)), 1500);
+});
+`, { mode: 0o700 });
+await mkdir(join(directory, 'Vault', '.wiki'), { recursive: true });
+await writeFile(join(directory, 'Vault', '.wiki', 'settings.json'), JSON.stringify({ provider: 'codex', codexPath: fixture, claudePath: '', model: '', captureShortcut: '', quickNoteShortcut: '', customInstruction: '정리해 주세요.' }));
+const app = await electron.launch({ args: [resolve('.')], env: { ...process.env, WIKI_DATA_DIR: directory } });
+const errors = [];
+try {
+  const page = await app.firstWindow();
+  page.on('pageerror', error => errors.push(error.message));
+  await page.waitForFunction(() => !!window.wiki);
+  const source = await page.evaluate(async () => {
+    const source = await window.wiki.handleCreateNote('blank');
+    const saved = await window.wiki.handleSaveNote({ ...source, title: '로그인 개선 기록', body: '로그인 오류 메시지를 수정했다.\n- [ ] 운영 배포 확인', folder: '업무' });
+    const secret = await window.wiki.handleCreateNote('blank');
+    await window.wiki.handleSaveNote({ ...secret, title: '선택하지 않은 기록', body: '전달하지 않을 비공개 내용' });
+    return saved;
+  });
+  await page.reload();
+  await page.getByRole('button', { name: '주간보고 만들기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '주간보고 만들기' });
+  await expect(dialog.getByRole('button', { name: 'AI로 보고서 생성' })).toBeDisabled();
+  await dialog.getByLabel('보고서 시작일').fill('2026-01-01');
+  await dialog.getByLabel('보고서 종료일').fill('2026-12-31');
+  await dialog.getByLabel('자료 선택: 로그인 개선 기록', { exact: true }).check();
+  await dialog.getByRole('button', { name: '맞춤 템플릿 만들기' }).click();
+  await dialog.getByLabel('템플릿 이름', { exact: true }).fill('우리 팀 보고');
+  await dialog.getByLabel('템플릿 항목', { exact: true }).fill('완료\n진행\n요청');
+  await dialog.getByLabel('템플릿 말투').fill('정중하게 작성하세요.');
+  await dialog.getByRole('button', { name: '템플릿 저장', exact: true }).click();
+  await expect(dialog.getByLabel('보고서 양식')).toHaveValue(/custom-/);
+  expect(await page.evaluate(async () => (await window.wiki.handleReportTemplates()).at(-1).name)).toBe('우리 팀 보고');
+  await dialog.getByLabel('보고서 양식').selectOption('weekly');
+  await dialog.getByRole('button', { name: 'AI로 보고서 생성' }).click();
+  await expect.poll(async () => { try { return JSON.parse(await readFile(callsPath, 'utf8')).records.length; } catch { return 0; } }).toBe(1);
+  await dialog.getByRole('button', { name: '생성 취소' }).click();
+  await expect(dialog.getByRole('alert')).toContainText(/cancel|취소/i);
+  await dialog.getByRole('button', { name: 'AI로 보고서 생성' }).click();
+  await expect(dialog.getByLabel('보고서 초안')).toHaveValue(/로그인 오류 메시지를 개선했다/);
+  expect(await readFile(callsPath, 'utf8')).not.toContain('전달하지 않을');
+  expect((await page.evaluate(() => window.wiki.handleBootstrap())).notes).toHaveLength(2);
+  await dialog.getByRole('button', { name: '로그인 개선 기록', exact: true }).click();
+  await expect(dialog.getByRole('region', { name: '근거 원문' })).toContainText('운영 배포 확인');
+  await dialog.getByRole('button', { name: '원문 닫기' }).click();
+  await dialog.getByLabel('보고서 초안').fill((await dialog.getByLabel('보고서 초안').inputValue()) + '\n직접 검토한 보고서');
+  await dialog.getByRole('button', { name: '보고서 복사' }).click();
+  await expect(dialog.getByRole('status')).toContainText('보고서를 복사했습니다.');
+  expect(await app.evaluate(async ({ clipboard }) => (await clipboard.readText()).includes('직접 검토한 보고서'))).toBe(true);
+  const exportPath = join(directory, 'report.md');
+  await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }); }, exportPath);
+  await dialog.getByRole('button', { name: 'Markdown 내보내기' }).click();
+  await expect.poll(async () => { try { return await readFile(exportPath, 'utf8'); } catch { return ''; } }).toContain('직접 검토한 보고서');
+  await dialog.getByRole('button', { name: '새 메모로 저장', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '저장됨', exact: true })).toBeDisabled();
+  const after = await page.evaluate(() => window.wiki.handleBootstrap());
+  expect(after.notes).toHaveLength(3);
+  expect(after.notes.find(note => note.id === source.id)).toEqual(source);
+  expect(after.notes.find(note => note.folder === '업무보고').body).toContain('직접 검토한 보고서');
+  await page.screenshot({ path: join(directory, 'report.png') });
+  await dialog.getByRole('button', { name: '보고서 창 닫기' }).click();
+  await page.getByRole('button', { name: '주간보고 만들기', exact: true }).click();
+  await dialog.getByLabel('자료 선택: 로그인 개선 기록', { exact: true }).check();
+  await dialog.getByRole('button', { name: '원문 모음 만들기' }).click();
+  await expect(dialog.getByLabel('보고서 초안')).toHaveValue(/선택한 원문/);
+  await expect(dialog.getByLabel('보고서 초안')).toHaveValue(/운영 배포 확인/);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  expect(errors).toEqual([]);
+  console.log(JSON.stringify({ ok: true, directory, checks: ['custom template persistence', 'selected sources only', 'cancel/retry', 'AI citations', 'source inspection', 'edited copy/export/save', 'original unchanged', 'local outline', 'keyboard close'] }));
+} finally {
+  // A failed assertion may leave a modal open. Complete the normal close handshake.
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.webContents.executeJavaScript('window.wiki.handleCloseReady()')).catch(() => undefined);
+  await app.close();
+}

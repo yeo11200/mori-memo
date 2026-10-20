@@ -55,6 +55,13 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleReportTemplates(): Promise<import('./reports').ReportTemplate[]>;
+  handleSaveReportTemplate(template: import('./reports').ReportTemplate): Promise<import('./reports').ReportTemplate[]>;
+  handleDeleteReportTemplate(id: string): Promise<import('./reports').ReportTemplate[]>;
+  handleGenerateReport(input: import('./reports').ReportInput, ai: boolean): Promise<import('./reports').ReportDraft>;
+  handleSaveReport(id: string, body: string): Promise<Note>;
+  handleExportReport(id: string, body: string): Promise<string | null>;
+  handleCopyReport(id: string, body: string): Promise<void>;
   handleWorkState(provider: import('./work').WorkProvider): Promise<import('./work').WorkState>;
   handleWorkConnect(input: import('./work').WorkCredentials): Promise<import('./work').WorkState>;
   handleWorkSelect(provider: import('./work').WorkProvider, selection: import('./work').WorkSelection): Promise<import('./work').WorkState>;

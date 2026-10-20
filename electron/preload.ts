@@ -2,6 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleReportTemplates: () => ipcRenderer.invoke('wiki:report-templates'),
+  handleSaveReportTemplate: template => ipcRenderer.invoke('wiki:report-template-save', template),
+  handleDeleteReportTemplate: id => ipcRenderer.invoke('wiki:report-template-delete', id),
+  handleGenerateReport: (input, ai) => ipcRenderer.invoke('wiki:report-generate', input, ai),
+  handleSaveReport: (id, body) => ipcRenderer.invoke('wiki:report-save', id, body),
+  handleExportReport: (id, body) => ipcRenderer.invoke('wiki:report-export', id, body),
+  handleCopyReport: (id, body) => ipcRenderer.invoke('wiki:report-copy', id, body),
   handleWorkState: provider => ipcRenderer.invoke('wiki:work-state', provider),
   handleWorkConnect: input => ipcRenderer.invoke('wiki:work-connect', input),
   handleWorkSelect: (provider, selection) => ipcRenderer.invoke('wiki:work-select', provider, selection),
