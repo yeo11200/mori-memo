@@ -48,7 +48,7 @@ npm run setup:billing
 ## 2. Supabase 연결
 
 1. 테스트용 Supabase 프로젝트를 준비한다.
-2. SQL Editor 또는 migration 도구로 `server/billing/migrations/001_billing.sql`을 적용한다. 한 번만 적용하는 초기 migration이다.
+2. SQL Editor 또는 migration 도구로 `server/billing/migrations/001_billing.sql`을 적용한다. 한 번만 적용하는 초기 migration이다. 문서 공유에는 `002_sharing.sql`도 순서대로 적용한다. 기존 프로젝트에 초기 migration을 다시 적용하지 않는다. [공유 가이드](document-sharing.md)를 참고한다.
 3. 이메일 OTP 템플릿에 `{{ .Token }}`을 넣고 SMTP·발신 도메인·만료·재발송 정책을 설정한다. 실제 이메일 계정으로 발송과 잘못된 코드·만료를 검증한다.
 4. `.env.billing`의 `SUPABASE_URL`, 공개 anon key, 서버 전용 service role key를 설정한다. service role key는 앱에 넣지 않는다.
 

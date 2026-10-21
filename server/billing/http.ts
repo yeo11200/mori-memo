@@ -2,9 +2,11 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { BILLING_POLICY, PRO_AMOUNT, handleBillingEmail, handleBillingId, type AuthTokens } from '../../shared/billing';
 import { BillingError, BillingService } from './service';
 import { RemoteError, handleJSONRequest } from './adapters';
+import type { SharingService } from '../sharing/service';
 
 export interface HTTPConfig {
   origin: string; supabaseURL: string; anonKey: string; tossClientKey: string;
+  sharing?: SharingService;
   cronSecret: string; termsURL: string; privacyURL: string; fetcher?: typeof fetch;
 }
 const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY' };
@@ -26,14 +28,19 @@ export const handleBillingHTTP = (service: BillingService, config: HTTPConfig) =
       const origin = request.headers.get('origin');
       if (origin && origin !== config.origin) return reply({ error: '허용되지 않은 요청입니다.' }, 403);
       const ipHash = createHash('sha256').update(config.cronSecret + remoteIP).digest('hex');
-      await service.store.rateLimit('ip:' + ipHash, 180, 60);
+      await service.store.rateLimit((path.startsWith('/s/') ? 'share-read:' : 'ip:') + ipHash, 180, 60);
       const readBody = async () => {
         const text = await request.text();
-        if (text.length > 16000) throw new BillingError('요청이 너무 큽니다.', 413);
+        if (text.length > (path.startsWith('/shares/') ? 700000 : 16000)) throw new BillingError('요청이 너무 큽니다.', 413);
         try { const data = JSON.parse(text || '{}'); if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(); return data; }
         catch { throw new BillingError('요청 형식을 확인해 주세요.'); }
       };
       if (path === '/health' && request.method === 'GET') return reply({ ok: true });
+      if (path === '/robots.txt' && request.method === 'GET') return new Response('User-agent: *\nDisallow: /s/\n', { headers: { ...headers, 'Content-Type': 'text/plain' } });
+      if (path.startsWith('/s/') && request.method === 'GET') {
+        if (!config.sharing) return reply({ error: '공유 서비스를 사용할 수 없습니다.' }, 503);
+        return config.sharing.page(path.slice(3));
+      }
       if (path === '/auth/email-code' && request.method === 'POST') {
         const email = handleBillingEmail((await readBody()).email);
         await service.store.rateLimit('email:' + createHash('sha256').update(email.toLowerCase()).digest('hex'), 1, 60);
@@ -89,6 +96,19 @@ export const handleBillingHTTP = (service: BillingService, config: HTTPConfig) =
       const id = handleBillingId(user.id);
       await service.store.rateLimit('user:' + id, 120, 60);
       await service.ensure(id, handleBillingEmail(user.email));
+      if (path === '/shares' && request.method === 'GET') {
+        if (!config.sharing) return reply({ error: '공유 서버 설정을 확인해 주세요.' }, 503);
+        return reply(await config.sharing.list(id));
+      }
+      if (path.startsWith('/shares/source/')) {
+        if (!config.sharing) return reply({ error: '공유 서버 설정을 확인해 주세요.' }, 503);
+        const key = path.slice('/shares/source/'.length);
+        if (request.method === 'GET') return reply(await config.sharing.owner(id, key));
+        const body = await readBody();
+        if (request.method === 'PUT') return reply(await config.sharing.mutate(id, key, body.operation, body.expectedRevision, body.document, body.deviceId));
+        if (request.method === 'DELETE') return reply(await config.sharing.mutate(id, key, 'revoke', body.expectedRevision));
+        throw new BillingError('지원하지 않는 공유 요청입니다.', 405);
+      }
       const deviceId = url.searchParams.get('device') || undefined;
       if (deviceId) handleBillingId(deviceId);
       if (path === '/me' && request.method === 'GET') return reply(await service.entitlements(id, deviceId));

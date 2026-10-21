@@ -331,3 +331,18 @@ body:has(.quick-note) { min-width:0; overflow:hidden; }
 .account-settings__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 .account-settings input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 5px; }
+
+.share-dialog__backdrop { z-index: 15; }
+.share-dialog { width: min(960px, calc(100vw - 48px)); max-height: 90vh; }
+.share-dialog > p, .share-dialog__web { color: var(--mori-text-secondary); font-size: 13px; line-height: 1.7; }
+.share-dialog__hint { color: var(--mori-muted) !important; font-size: 12px !important; }
+.share-dialog iframe { width: 100%; height: 360px; border: 1px solid var(--mori-border); border-radius: 8px; background: white; }
+.share-dialog__actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.share-dialog__web { border-top: 1px solid var(--mori-border); margin-top: 20px; padding-top: 12px; }
+.share-dialog__web > label { display: grid; gap: 8px; margin: 14px 0; }
+.share-dialog__web input:not([type=checkbox]) { width: 100%; padding: 10px; border: 1px solid var(--mori-border); border-radius: 7px; font: inherit; }
+.share-dialog__web .share-dialog__consent { display: flex; gap: 9px; align-items: start; }
+.share-dialog__consent input { flex: 0 0 auto; margin-top: 5px; }
+.report-dialog .wiki__modal__actions { flex-wrap: wrap; }
+
+.share-dialog__account { border: 0; margin: 0; padding: 0; }

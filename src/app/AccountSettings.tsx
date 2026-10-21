@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { BillingState } from '../../shared/billing';
+import type { ShareInfo } from '../../shared/sharing';
 
 const date = (value?: string | null) => value ? new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' KST' : '';
 const message = (error: unknown) => String(error instanceof Error ? error.message : error).replace(/^Error invoking remote method '[^']+': Error: /, '');
 export const AccountSettings = ({ onChange }: { onChange?: (state: BillingState) => void }) => {
+  const [shares, setShares] = useState<ShareInfo[] | null>(null);
   const [state, setState] = useState<BillingState | null>(null);
   const [email, setEmail] = useState(''); const [code, setCode] = useState('');
   const [sent, setSent] = useState(false); const [consent, setConsent] = useState(false);
@@ -26,6 +28,7 @@ export const AccountSettings = ({ onChange }: { onChange?: (state: BillingState)
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
   const action = (value: 'trial' | 'restore' | 'cancel' | 'resume') => void run(async () => { update(await window.wiki.handleBillingAction(value)); if (value === 'cancel') setNotice('다음 갱신을 중단했습니다. 진행 중인 결제는 상태 확인이 필요할 수 있습니다.'); });
+  useEffect(() => { setShares(null); }, [state?.signedIn, state?.email]);
   const account = state?.account;
   return <section className="account-settings" aria-label="계정 및 Pro"><h3>계정 및 Pro</h3>
     {!state ? <p>계정 상태 확인 중…</p> : state.mode === 'beta' ? <p>현재 버전은 가입 없이 사용하는 무료 베타입니다. 보고서와 템플릿을 무료로 사용할 수 있습니다. 월 2,900원 Pro는 상용 버전에서 제공할 예정입니다.</p> : <>
@@ -47,6 +50,7 @@ export const AccountSettings = ({ onChange }: { onChange?: (state: BillingState)
         </div>
         <p>등록된 Mac {account?.devices.length || 0}/2 · 계정 로그인으로 메모가 동기화되지는 않습니다.</p>
         {account?.devices.map(device => <div key={device.id} className="account-settings__actions"><span>{device.name}{device.id === state.deviceId ? ' (이 Mac)' : ''} · {date(device.lastSeenAt)}</span><button className="wiki__button" disabled={busy} onClick={() => void run(async () => update(await window.wiki.handleBillingRevoke(device.id)))}>기기 해제</button></div>)}
+        <details><summary>공유 문서 관리</summary><p>원본 메모를 삭제했거나 Pro가 끝나도 공유 링크를 중단할 수 있습니다.</p><button className="wiki__button" disabled={busy} onClick={() => void run(async () => setShares(await window.wiki.handleListShares()))}>공유 문서 목록 불러오기</button>{shares?.map(share => <div key={share.id} className="account-settings__actions"><span>{share.title} · {date(share.updatedAt)}</span><button className="wiki__button" disabled={busy} aria-label={share.title + ' 공유 중단'} onClick={() => void run(async () => { await window.wiki.handleStopShare(share.sourceKey, share.revision); setShares(await window.wiki.handleListShares()); setNotice('공유를 중단했습니다.'); })}>공유 중단</button></div>)}{shares?.length === 0 && <p>공유 중인 문서가 없습니다.</p>}</details>
         {!!state.payments?.length && <details><summary>결제 내역과 환불 요청</summary>{state.payments.map(payment => <div className="account-settings__actions" key={payment.id}><span>{date(payment.createdAt)} · {payment.amount.toLocaleString()}원 · {({ done: '결제 완료', failed: '결제 실패', refunded: '환불 완료', pending: '확인 중', unknown: '확인 중' })[payment.state]}</span>{payment.state === 'done' && <button className="wiki__button" disabled={busy || payment.refundRequested} onClick={() => void run(async () => { update(await window.wiki.handleBillingRefund(payment.id)); setNotice('환불 요청을 접수했습니다. 판매 조건 확인 후 처리됩니다.'); })}>{payment.refundRequested ? '환불 요청 접수됨' : '환불 요청'}</button>}</div>)}</details>}
       </>}
       {waiting && <p role="status">결제 상태를 확인하고 있습니다. 잠시 후에도 바뀌지 않으면 구매 복원을 눌러 주세요.</p>}

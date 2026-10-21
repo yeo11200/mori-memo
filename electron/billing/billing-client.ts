@@ -123,6 +123,25 @@ export class BillingClient {
       await this.sync(local); return this.view(local);
     });
   }
+  listShares(): Promise<import('../../shared/sharing').ShareInfo[]> {
+    return this.exclusive(async () => {
+      const local = await this.local();
+      return await this.request('/shares', undefined, await this.access(local));
+    });
+  }
+  sharing(sourceKey: string, input?: { operation: 'create' | 'update' | 'revoke'; expectedRevision: number; document?: import('../../shared/sharing').SharedDocument }): Promise<import('../../shared/sharing').ShareInfo | null> {
+    return this.exclusive(async () => {
+      if (!/^[a-f0-9]{64}$/.test(sourceKey)) throw new Error('공유할 문서를 다시 선택해 주세요.');
+      const local = await this.local();
+      const method = !input ? 'GET' : input.operation === 'revoke' ? 'DELETE' : 'PUT';
+      const result = await this.request('/shares/source/' + sourceKey, input ? { ...input, deviceId: local.deviceId } : undefined, await this.access(local), method);
+      if (result?.url) {
+        const url = new URL(result.url);
+        if (url.origin !== new URL(this.config.url).origin || !/^\/s\/[A-Za-z0-9_-]{43}$/.test(url.pathname) || url.search || url.hash || url.username || url.password) throw new Error('공유 링크를 검증하지 못했습니다.');
+      }
+      return result;
+    });
+  }
   revoke(deviceId: string) {
     return this.exclusive(async () => {
       handleBillingId(deviceId); const local = await this.local();

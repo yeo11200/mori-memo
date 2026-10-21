@@ -55,6 +55,13 @@ export interface WikiLink {
 
 export interface Bootstrap { notes: Note[]; settings: AppSettings; vaultPath: string; warnings: string[] }
 export interface WikiAPI {
+  handleListShares(): Promise<import('./sharing').ShareInfo[]>;
+  handleStopShare(sourceKey: string, revision: number): Promise<import('./sharing').ShareInfo | null>;
+  handlePrepareShare(source: import('./sharing').ShareSource): Promise<import('./sharing').SharePreview>;
+  handleShareStatus(id: string): Promise<import('./sharing').ShareInfo | null>;
+  handleShareMutate(id: string, operation: import('./sharing').ShareOperation, revision: number, confirmed: boolean): Promise<import('./sharing').ShareInfo | null>;
+  handleCopyShare(id: string): Promise<void>;
+  handleShareExport(id: string, format: 'html' | 'pdf'): Promise<string | null>;
   handleBillingState(force?: boolean): Promise<import('./billing').BillingState>;
   handleBillingSendCode(email: string): Promise<void>;
   handleBillingVerify(email: string, code: string): Promise<import('./billing').BillingState>;

@@ -4,11 +4,14 @@ import { readFile, writeFile, mkdir, mkdtemp, rm, cp, rename, lstat } from 'node
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Vault } from './vault/vault';
 import { ReportService } from './reports/report-service';
+import { DocumentSharing } from './sharing/sharing-service';
+import { handleExportSharedDocument } from './sharing/export';
+import type { ShareSource } from '../shared/sharing';
 import { BillingClient, type BillingConfig } from './billing/billing-client';
 import { AppleImportService } from './apple-notes/import-service';
 import { handleReadAppleNotes } from './apple-notes/source';
@@ -284,6 +287,19 @@ const handleIPC = () => {
       ? await openAIRunner.handleRun(request, { apiKey: await apiKeyStore.handleGet() || '', model: settings.model || 'gpt-5-nano', timeoutMs: 180000 })
       : await runner.handleRun(request, { provider: settings.provider, executablePath: settings.provider === 'codex' ? settings.codexPath : settings.claudePath, model: settings.model, timeoutMs: 180000 });
   });
+  const sharing = new DocumentSharing((key, input) => billing.sharing(key, input));
+  handleOn('share-prepare', async (source: ShareSource) => {
+    if (!source || !['note', 'report'].includes(source.kind)) throw new Error('공유할 문서를 다시 선택해 주세요.');
+    const document = source.kind === 'note' ? await vault.handleGet(source.id) : reports.handleDocument(source.id, source.body);
+    const key = createHash('sha256').update(source.kind + ':' + source.id).digest('hex');
+    return sharing.prepare(key, { title: document.title, body: document.body });
+  });
+  handleOn('share-list', () => billing.listShares());
+  handleOn('share-stop', (key, revision) => billing.sharing(key, { operation: 'revoke', expectedRevision: revision }));
+  handleOn('share-status', id => sharing.status(id));
+  handleOn('share-mutate', (id, operation, revision, confirmed) => sharing.mutate(id, operation, revision, confirmed));
+  handleOn('share-copy', async id => { const info = await sharing.status(id); if (!info || info.revoked) throw new Error('공유 중인 링크가 없습니다.'); await clipboard.writeText(info.url); });
+  handleOn('share-export', (id, format) => { const value = sharing.get(id); return handleExportSharedDocument(window!, value.document.title, value.preview.html, format); });
   handleOn('report-templates', () => reports.handleListTemplates());
   handleOn('report-template-save', async template => { await billing.require('reports.template_write'); return reports.handleSaveTemplate(template); });
   handleOn('report-template-delete', id => reports.handleDeleteTemplate(id));

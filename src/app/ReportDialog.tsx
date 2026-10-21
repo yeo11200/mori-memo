@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { AccountSettings } from './AccountSettings';
+import { ShareDialog } from './ShareDialog';
 import type { BillingState } from '../../shared/billing';
 import { handleLocalDate } from '../../shared/daily';
 import { REPORT_MAX_CHARS, REPORT_MAX_SOURCES, REPORT_TEMPLATES, handleReportDate, handleReportRange } from '../../shared/reports';
@@ -35,6 +36,7 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
   const [sourceId, setSourceId] = useState('');
   const [accountState, setAccountState] = useState<BillingState | null>(null);
   const [showAccount, setShowAccount] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const inspected = notes.find(note => note.id === sourceId);
   const template = templates.find(item => item.id === templateId) || templates[0];
   const picked = snapshot.filter(note => selected.includes(note.id));
@@ -119,8 +121,9 @@ export const ReportDialog = ({ notes, settings, onSaved, onClose }: {
         <div className="report-dialog__references"><strong>근거 기록</strong>{draft.sources.map(source => <div key={source.id}><button className="wiki__button" disabled={!!busy || sourceStatus(source) === '현재 접근 불가'} onClick={() => setSourceId(source.id)}>{source.title}</button><span>{source.date} {sourceStatus(source)}</span></div>)}</div>
         {sourceId && <section className="report-dialog__inspection" aria-label="근거 원문"><div className="report-dialog__row"><strong>{inspected?.title || '현재 접근 불가'}</strong><button className="wiki__button" onClick={() => setSourceId('')}>원문 닫기</button></div><pre>{inspected?.body || '현재 본문을 읽을 수 없습니다.'}</pre></section>}
         <p className="report-dialog__hint">근거 기록은 현재 본문을 읽기 전용으로 표시합니다. AI의 출처 연결이 문장 내용의 정확성을 보장하지는 않습니다.</p>
-        <div className="wiki__modal__actions"><button className="wiki__button" disabled={!!busy} onClick={() => { setDraft(null); setSelected([]); setSnapshot(notes); setError(''); setNotice(''); }}>자료 다시 선택</button><button className="wiki__button" disabled={!!busy || !body.trim()} onClick={() => void perform('copy', async () => { await window.wiki.handleCopyReport(draft.id, body); setNotice('보고서를 복사했습니다.'); })}>보고서 복사</button><button className="wiki__button" disabled={!!busy || !body.trim()} onClick={() => void perform('export', async () => { const path = await window.wiki.handleExportReport(draft.id, body); if (path) setNotice('Markdown 파일을 저장했습니다.'); })}>Markdown 내보내기</button><button className="wiki__button wiki__button--primary" disabled={!!busy || saved || !body.trim()} onClick={() => void perform('save', async () => { const note = await window.wiki.handleSaveReport(draft.id, body); setSaved(true); await onSaved(note); setNotice('업무보고 폴더에 새 메모로 저장했습니다.'); })}>{saved ? '저장됨' : '새 메모로 저장'}</button></div>
+        <div className="wiki__modal__actions"><button className="wiki__button" disabled={!!busy} onClick={() => { setDraft(null); setSelected([]); setSnapshot(notes); setError(''); setNotice(''); }}>자료 다시 선택</button><button className="wiki__button" disabled={!!busy || !body.trim()} onClick={() => void perform('copy', async () => { await window.wiki.handleCopyReport(draft.id, body); setNotice('보고서를 복사했습니다.'); })}>보고서 복사</button><button className="wiki__button" disabled={!!busy || !body.trim()} onClick={() => setShowShare(true)}>PDF·HTML·웹 공유</button><button className="wiki__button" disabled={!!busy || !body.trim()} onClick={() => void perform('export', async () => { const path = await window.wiki.handleExportReport(draft.id, body); if (path) setNotice('Markdown 파일을 저장했습니다.'); })}>Markdown 내보내기</button><button className="wiki__button wiki__button--primary" disabled={!!busy || saved || !body.trim()} onClick={() => void perform('save', async () => { const note = await window.wiki.handleSaveReport(draft.id, body); setSaved(true); await onSaved(note); setNotice('업무보고 폴더에 새 메모로 저장했습니다.'); })}>{saved ? '저장됨' : '새 메모로 저장'}</button></div>
       </>}
+      {showShare && draft && <ShareDialog source={{ kind: 'report', id: draft.id, body }} onClose={() => setShowShare(false)} />}
       {busy && <p role="status">{busy === 'ai' ? '보고서 생성 중…' : '처리 중…'}{busy === 'ai' && <button className="wiki__button" onClick={() => void window.wiki.handleCancelAI().catch(cause => setError(errorText(cause)))}>생성 취소</button>}</p>}
       {error && <p role="alert" className="report-dialog__error">{error}</p>}{notice && <p role="status">{notice}</p>}
     </div>

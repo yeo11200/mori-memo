@@ -4,6 +4,8 @@ import { billingFixture } from './billing-fixtures';
 import { BillingService } from '../server/billing/service';
 import { SecretBox } from '../server/billing/adapters';
 import { handleBillingHTTP } from '../server/billing/http';
+import { SharingService } from '../server/sharing/service';
+import { MemoryShareStore } from './sharing-fixtures';
 
 /** Tests only: this module is not a production entry point or authentication bypass. */
 export const startBillingFixture = async () => {
@@ -32,6 +34,8 @@ export const startBillingFixture = async () => {
     if (path === '/auth/v1/logout') return Response.json({});
     return Response.json({ code: 'unauthorized' }, { status: 401 });
   };
-  handle = handleBillingHTTP(service, { origin: url, supabaseURL: 'https://fixture.invalid', anonKey: 'fixture-public-key', tossClientKey: 'test_ck_fixture', cronSecret: 'fixture-cron-secret-for-tests-only', termsURL: url + '/terms', privacyURL: url + '/privacy', fetcher: fakeAuth });
-  return { ...fixture, service, server, url, keys: { 'test-v1': fixture.publicPEM }, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
+  const shareStore = new MemoryShareStore();
+  const sharing = new SharingService(shareStore, service, url);
+  handle = handleBillingHTTP(service, { sharing, origin: url, supabaseURL: 'https://fixture.invalid', anonKey: 'fixture-public-key', tossClientKey: 'test_ck_fixture', cronSecret: 'fixture-cron-secret-for-tests-only', termsURL: url + '/terms', privacyURL: url + '/privacy', fetcher: fakeAuth });
+  return { ...fixture, service, sharing, shareStore, server, url, keys: { 'test-v1': fixture.publicPEM }, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
 };

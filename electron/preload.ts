@@ -2,6 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { WikiAPI } from '../shared/types';
 
 const api: WikiAPI & { handleCloseReady(): Promise<void> } = {
+  handleListShares: () => ipcRenderer.invoke('wiki:share-list'),
+  handleStopShare: (key, revision) => ipcRenderer.invoke('wiki:share-stop', key, revision),
+  handlePrepareShare: source => ipcRenderer.invoke('wiki:share-prepare', source),
+  handleShareStatus: id => ipcRenderer.invoke('wiki:share-status', id),
+  handleShareMutate: (id, operation, revision, confirmed) => ipcRenderer.invoke('wiki:share-mutate', id, operation, revision, confirmed),
+  handleCopyShare: id => ipcRenderer.invoke('wiki:share-copy', id),
+  handleShareExport: (id, format) => ipcRenderer.invoke('wiki:share-export', id, format),
   handleBillingState: force => ipcRenderer.invoke('wiki:billing-state', force),
   handleBillingSendCode: email => ipcRenderer.invoke('wiki:billing-code', email),
   handleBillingVerify: (email, code) => ipcRenderer.invoke('wiki:billing-verify', email, code),

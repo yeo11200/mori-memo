@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 
 const directory = await mkdtemp(join(tmpdir(), 'mori-billing-smoke-'));
 const modulePath = join(directory, 'fixture.mjs');
-await build({ entryPoints: ['Tests/billing-server-fixture.ts'], bundle: true, platform: 'node', format: 'esm', outfile: modulePath });
+await build({ entryPoints: ['Tests/billing-server-fixture.ts'], bundle: true, platform: 'node', format: 'esm', banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" }, outfile: modulePath });
 const { startBillingFixture } = await import(pathToFileURL(modulePath).href);
 const fixture = await startBillingFixture();
 const app = await electron.launch({ args: [resolve('.')], env: { ...process.env, WIKI_DATA_DIR: directory, MORI_COMMERCIAL_BUILD: '1', MORI_BILLING_URL: fixture.url, MORI_BILLING_PUBLIC_KEYS: JSON.stringify(fixture.keys) } });
