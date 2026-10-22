@@ -46,7 +46,7 @@ node scripts/graph-smoke.mjs --packaged
 4. 버전·변경 내역·알려진 문제·설치 안내·SHA-256 체크섬과 함께 GitHub Releases에 게시한다.
 5. 홈페이지 다운로드는 해당 GitHub Release 자산으로 연결하며 Google Drive는 보조 미러로만 제공한다.
 
-현재 `package:dmg`는 서명·공증을 수행하지 않는다. 다운로드 전에 이 사실과 Gatekeeper 경고 가능성을 알리고, Finder에서 Control-클릭해 **열기**를 선택하거나 시스템 설정의 개인정보 보호 및 보안에서 사용자가 직접 승인하는 절차를 안내한다. Gatekeeper 전체 해제 명령은 안내하지 않는다. 자동 업데이트는 아직 구현하지 않았다.
+현재 `package:dmg`는 서명·공증을 수행하지 않는다. 다운로드 전에 이 사실과 Gatekeeper 경고 가능성을 알리고, macOS 15 Sequoia부터 Control-클릭 후 **열기** 우회가 없으므로, 시스템 설정의 개인정보 보호 및 보안에서 **그래도 열기**로 사용자가 직접 승인하는 절차를 안내한다. Gatekeeper 전체 해제 명령은 안내하지 않는다. 자동 업데이트는 아직 구현하지 않았다.
 
 ## 4. 후속 단계: Developer ID와 공증
 
