@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const publicFiles = ['index.html', 'privacy.html', 'styles.css', 'config.js', 'site.js', 'assets/mori.svg', 'assets/memo-connections.png'];
+const publicFiles = ['index.html', 'privacy.html', 'terms.html', 'styles.css', 'config.js', 'site.js', 'assets/mori.svg', 'assets/memo-connections.png'];
 const html = await readFile(join(root, 'index.html'), 'utf8');
 const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
 for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
