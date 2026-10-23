@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="theme-color" content="#f5faff" />
+  <title>MORI 개인정보처리방침</title>
+  <link rel="icon" href="assets/mori.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .policy{max-width:760px;margin:0 auto;padding:64px 20px 96px;word-break:keep-all}
+    .policy h1{font-size:2rem;margin:0 0 8px}
+    .policy h2{font-size:1.25rem;margin:40px 0 12px}
+    .policy p,.policy li{font-size:1rem;line-height:1.75}
+    .policy ul{padding-left:1.25em}
+    .policy table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.9375rem}
+    .policy th,.policy td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+    .policy__meta{color:#5b7083;margin:0 0 32px}
+  </style>
+</head>
+<body>
+  <main class="policy">
+    <h1>MORI 개인정보처리방침</h1>
+    <p class="policy__meta">시행일 2026년 10월 23일</p>
+
+    <p>MORI는 메모를 사용자의 Mac에 저장하는 로컬 우선 앱입니다. 이 방침은 MORI 앱과 홈페이지가 어떤 정보를 다루는지 설명합니다.</p>
+
+    <h2>1. 기본 원칙</h2>
+    <ul>
+      <li>메모, 폴더, 첨부, 데일리 기록은 사용자가 고른 Mac의 보관함 폴더에만 저장됩니다.</li>
+      <li>MORI는 메모 본문을 운영자 서버로 수집하지 않습니다.</li>
+      <li>사용자가 직접 기능을 실행할 때만 아래 외부 서비스와 통신합니다.</li>
+    </ul>
+
+    <h2>2. 앱이 외부와 통신하는 경우</h2>
+    <table>
+      <thead><tr><th>기능</th><th>보내는 정보</th><th>받는 곳</th></tr></thead>
+      <tbody>
+        <tr><td>AI 작성, 요약, 주간보고</td><td>사용자가 선택한 메모와 요청 내용</td><td>사용자가 연결한 AI 서비스(OpenAI, Codex, Claude 등). 해당 서비스의 개인정보처리방침이 적용됩니다.</td></tr>
+        <tr><td>Jira, GitHub, GitLab, Google Calendar 연동</td><td>사용자가 입력한 토큰과 조회 요청</td><td>각 서비스. MORI는 읽기 요청만 보냅니다.</td></tr>
+        <tr><td>Apple 메모 가져오기</td><td>외부 전송 없음</td><td>Mac 안의 Apple 메모 앱에서 읽기만 합니다.</td></tr>
+      </tbody>
+    </table>
+    <p>API 키와 연동 토큰은 보관함 밖에 macOS 보안 저장소로 암호화해 저장하며, 메모와 백업에 포함하지 않습니다. 연결을 해제하면 이 Mac에서 삭제됩니다.</p>
+
+    <h2>3. 계정과 Pro (해당 기능을 제공하는 버전에서만)</h2>
+    <p>현재 무료 베타에는 계정 기능이 없습니다. 이후 계정과 Pro 구독을 제공하는 버전에서는 다음 정보를 처리합니다.</p>
+    <table>
+      <thead><tr><th>항목</th><th>목적</th><th>보관 기간</th></tr></thead>
+      <tbody>
+        <tr><td>이메일 주소</td><td>로그인 코드 발송, 계정 식별</td><td>탈퇴 시까지</td></tr>
+        <tr><td>기기 식별값</td><td>구독 기기 수 관리</td><td>기기 해제 또는 탈퇴 시까지</td></tr>
+        <tr><td>구독, 결제 기록</td><td>결제, 갱신, 환불 처리</td><td>관계 법령에 따른 기간(전자상거래법상 계약, 결제 기록 5년)</td></tr>
+      </tbody>
+    </table>
+    <p>카드 번호는 MORI가 보관하지 않습니다. 결제는 토스페이먼츠가 처리하며, MORI 서버에는 결제사가 발급한 정기결제용 키만 암호화해 저장합니다. 계정 데이터는 Supabase(클라우드 데이터베이스)에 저장됩니다.</p>
+
+    <h2>4. 웹 공유</h2>
+    <p>사용자가 웹 공유를 선택하고 업로드에 동의한 문서 복사본만 서버에 올라갑니다. 공유 링크를 가진 사람은 누구나 읽을 수 있습니다. 공유를 중단하면 서버의 본문을 지우고 링크는 더 이상 열리지 않습니다. 이미 내려받거나 복사한 내용은 회수할 수 없습니다.</p>
+
+    <h2>5. 홈페이지</h2>
+    <p>홈페이지는 쿠키나 방문자 분석 도구를 사용하지 않습니다. 호스팅 업체(Vercel)가 서비스 운영을 위해 접속 기록(IP 주소, 접속 시각, 브라우저 정보)을 남길 수 있습니다.</p>
+
+    <h2>6. 제3자 제공</h2>
+    <p>법령에 따른 요청이 있는 경우를 제외하고, 위에 적은 처리 목적 밖으로 개인정보를 다른 곳에 제공하거나 판매하지 않습니다.</p>
+
+    <h2>7. 이용자의 권리</h2>
+    <ul>
+      <li>보관함 폴더를 지우면 Mac에 저장된 MORI 데이터가 모두 삭제됩니다.</li>
+      <li>계정이 있는 경우 언제든 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다.</li>
+    </ul>
+
+    <h2>8. 문의</h2>
+    <p>개인정보 관련 문의는 <a href="https://github.com/yeo11200/mori-memo/issues" target="_blank" rel="noreferrer">GitHub Issues</a>로 보내 주세요. 민감한 내용은 이슈에 직접 적지 말고 연락 방법을 요청해 주세요.</p>
+
+    <h2>9. 변경</h2>
+    <p>이 방침이 바뀌면 이 페이지에 시행일과 함께 게시합니다.</p>
+  </main>
+</body>
+</html>
